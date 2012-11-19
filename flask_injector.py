@@ -67,7 +67,7 @@ from flask.views import View
 
 
 __author__ = 'Alec Thomas <alec@swapoff.org>'
-__version__ = '0.1.0'
+__version__ = '0.1.1'
 __all__ = ['Builder', 'request', 'RequestScope', 'Config', 'Request', 'decorator', 'route']
 
 
@@ -285,5 +285,4 @@ class Builder(object):
         if hasattr(view, '__decorators__'):
             for state in view.__decorators__:
                 iview = state.apply(injector, iview)
-        print args, kwargs
         app.add_url_rule(*args, view_func=iview, **kwargs)
