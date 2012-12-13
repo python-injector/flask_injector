@@ -50,9 +50,12 @@ dependency-injection:
     def main():
         views = [foo, bar, Waz]
         modules = [configure]
-        app = Builder(views, modules, config={
+        app = Flask(__name__)
+        app.config.update({
             'DB_CONNECTION_STRING': ':memory:',
-            }).build()
+            })
+        flask_injector = FlaskInjector(views, modules)
+        injector = flask_injector.init_app(app)
         app.run()
 """
 
@@ -60,15 +63,15 @@ from __future__ import absolute_import
 
 import inspect
 from werkzeug.local import Local, LocalManager
-from injector import Injector, Scope, ScopeDecorator, singleton, InstanceProvider
+from injector import Injector, Module, Scope, ScopeDecorator, singleton, InstanceProvider
 import flask
 from flask import Config, Request
 from flask.views import View
 
 
 __author__ = 'Alec Thomas <alec@swapoff.org>'
-__version__ = '0.1.1'
-__all__ = ['Builder', 'request', 'RequestScope', 'Config', 'Request', 'decorator', 'route']
+__version__ = '0.2.0'
+__all__ = ['FlaskInjector', 'request', 'RequestScope', 'Config', 'Request', 'decorator', 'route']
 
 
 class InjectorView(View):
@@ -211,62 +214,31 @@ class decorator(object):
         return wrap
 
 
-class Builder(object):
-    """Builds an Injector-enabled Flask app.
+class FlaskModule(Module):
+    def __init__(self, app, views, modules):
+        self.app = app
+        self.views = views
+        self.modules = modules
 
-    Use it like so:
-
-    >>> builder = Builder()
-    >>> app = builder.build()  # "app" is a Flask instance
-
-    The created Flask instance has an additional "injector" attribute.
-
-    Objects bound to the Injector are by the builder are:
-    - Support for per-request scopes via the @request decorator.
-    - The Flask application object (flask.Flask).
-    - The Flask configuration object (flask.Config).
-    - The current Flask request (flask.Request, usually available as flask.request).
-
-    """
-    def __init__(self, views=None, modules=None, config=None, package='__main__'):
-        """Create a new Builder.
-
-        :param views: List of Injector-enabled views to add to the Flask app.
-        :param modules: List of Injector Modules to use to configure DI.
-        :param config: Flask configuration dictionary.
-        :param package: Package name passed to Flask constructor.
-        """
-        self._views = views or []
-        self._modules = modules or []
-        self._config = config or {}
-        self._package = package
-
-    def build(self):
-        """Build Flask app."""
-        injector = Injector(self._configure)
-        app = injector.get(flask.Flask)
-        app.injector = injector
-        return app
-
-    def _configure(self, binder):
+    def configure(self, binder):
         injector = binder.injector
         binder.bind_scope(RequestScope)
-        app = flask.Flask(self._package)
-        app.config.update(self._config)
-        binder.bind(flask.Flask, to=app, scope=singleton)
-        binder.bind(Config, to=app.config, scope=singleton)
+        binder.bind(flask.Flask, to=self.app, scope=singleton)
+        binder.bind(Config, to=self.app.config, scope=singleton)
         binder.bind(Request, to=lambda: flask.request)
-        for module in self._modules:
+        for module in self.modules:
             binder.install(module)
+        self._configure_views(injector)
 
+    def _configure_views(self, injector):
         # Generate views
-        for view in self._views:
+        for view in self.views:
             if inspect.isclass(view):
-                self._reflect_views_from_class(view, injector, app)
+                self._reflect_views_from_class(view, injector, self.app)
             else:
                 assert hasattr(view, '__view__')
                 iview = InjectorView.as_view(view.__name__, handler=view, injector=injector)
-                iview = self._install_route(injector, app, view, iview, *view.__view__)
+                iview = self._install_route(injector, self.app, view, iview, *view.__view__)
 
     def _reflect_views_from_class(self, cls, injector, app):
         class_view = getattr(cls, '__view__', None)
@@ -286,3 +258,44 @@ class Builder(object):
             for state in view.__decorators__:
                 iview = state.apply(injector, iview)
         app.add_url_rule(*args, view_func=iview, **kwargs)
+
+
+class FlaskInjector(object):
+    """Configures an Injector-enabled Flask app.
+
+    This is achieved by using the @route decorator to mark views as routing
+    endpoints. Flask-Injector maps these to class-based views with
+    dependencies @inject'ed by Injector as keyword arguments.
+
+    Used correctly this completely alleviates the need for most Flask globals.
+
+    Use it like so:
+
+        >>> builder = FlaskInjector(views, modules)
+        >>> app = Flask(__name__)
+        >>> injector = builder.init_app(app)
+
+    Objects bound to the Injector are:
+    - Support for per-request scopes via the @request decorator.
+    - The Flask application object (flask.Flask).
+    - The Flask configuration object (flask.Config).
+    - The current Flask request (flask.Request, usually available as flask.request).
+
+    """
+
+    def __init__(self, views=None, modules=None):
+        """Create a new FlaskInjector.
+
+        :param views: List of Injector-enabled views to add to the Flask app.
+        :param modules: List of Injector Modules to use to configure DI.
+        """
+        self._views = views or []
+        self._modules = modules or []
+
+    def init_app(self, app):
+        """Configure FlaskInjector with the provided app.
+
+        :param app: Flask application instance.
+        :returns: Injector instance.
+        """
+        return Injector(FlaskModule(app, self._views, self._modules))
