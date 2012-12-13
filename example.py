@@ -1,7 +1,7 @@
 from injector import Module, inject, singleton
 from flask import Flask, Request, jsonify
 from flask.ext.cache import Cache
-from flask.ext.injector import Builder, route, decorator
+from flask.ext.injector import FlaskInjector, route, decorator
 from flask.ext.sqlalchemy import SQLAlchemy
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm.exc import NoResultFound
@@ -100,14 +100,16 @@ class AppModule(Module):
 
 
 def main():
-    builder = Builder([KeyValueStore], [AppModule()], config=dict(
+    app = Flask(__name__)
+    app.config.update(
         DB_CONNECTION_STRING=':memory:',
         CACHE_TYPE='simple',
         SQLALCHEMY_DATABASE_URI='sqlite://',
-    ))
-    app = builder.build()
+    )
     app.debug = True
-    # app.run()
+    builder = FlaskInjector([KeyValueStore], [AppModule()])
+    injector = builder.init_app(app)
+
     client = app.test_client()
 
     response = client.get('/api/store/')
