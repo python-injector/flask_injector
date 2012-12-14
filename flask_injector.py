@@ -298,4 +298,12 @@ class FlaskInjector(object):
         :param app: Flask application instance.
         :returns: Injector instance.
         """
-        return Injector(FlaskModule(app, self._views, self._modules))
+        injector = Injector(FlaskModule(app, self._views, self._modules))
+
+        if not self._views:
+            for endpoint, view in app.view_functions.iteritems():
+                injector_aware_view = InjectorView.as_view(endpoint,
+                    handler=view, injector=injector)
+                app.view_functions[endpoint] = injector_aware_view
+
+        return injector
