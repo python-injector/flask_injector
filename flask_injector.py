@@ -283,7 +283,7 @@ class FlaskInjector(object):
 
     """
 
-    def __init__(self, views=None, modules=None):
+    def __init__(self, views=None, modules=None, inject_native_views=False):
         """Create a new FlaskInjector.
 
         :param views: List of Injector-enabled views to add to the Flask app.
@@ -291,6 +291,7 @@ class FlaskInjector(object):
         """
         self._views = views or []
         self._modules = modules or []
+        self._inject_native_views = inject_native_views
 
     def init_app(self, app):
         """Configure FlaskInjector with the provided app.
@@ -298,12 +299,14 @@ class FlaskInjector(object):
         :param app: Flask application instance.
         :returns: Injector instance.
         """
-        injector = Injector(FlaskModule(app, self._views, self._modules))
+        injector = Injector()
 
-        if not self._views:
+        if self._inject_native_views:
             for endpoint, view in app.view_functions.iteritems():
                 injector_aware_view = InjectorView.as_view(endpoint,
                     handler=view, injector=injector)
                 app.view_functions[endpoint] = injector_aware_view
+
+        injector.binder.install(FlaskModule(app, self._views, self._modules))
 
         return injector

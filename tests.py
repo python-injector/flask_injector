@@ -18,7 +18,7 @@ def test_injection_in_preconfigured_views():
     def conf(binder):
         binder.bind(str, to="something")
 
-    flask_injector = FlaskInjector(modules=[conf])
+    flask_injector = FlaskInjector(modules=[conf], inject_native_views=True)
     flask_injector.init_app(app)
 
     with app.test_client() as c:
