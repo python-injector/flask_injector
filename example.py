@@ -7,8 +7,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy import Column, String
 
-"""
-This is an example of using Injector (https://github.com/alecthomas/injector) and Flask.
+"""This is an example of using Injector (https://github.com/alecthomas/injector) and Flask.
 
 Flask provides a lot of very nice features, but also requires a lot of globals
 and tightly bound code. Flask-Injector seeks to remedy this.
@@ -80,8 +79,8 @@ class KeyValueStore(object):
 
 class AppModule(Module):
     """Configure the application."""
-    def configure(self, binder):
-        app = binder.injector.get(Flask)
+    @inject(app=Flask)
+    def configure(self, binder, app):
         # We configure the DB here, explicitly, as Flask-SQLAlchemy requires
         # the DB to be configured before request handlers are called.
         db = self.configure_db(app)

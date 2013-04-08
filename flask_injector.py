@@ -38,8 +38,8 @@ dependency-injection:
             return 'waz'
 
 
-    def configure(binder):
-        config = binder.injector.get(Config)
+    @inject(config=Config)
+    def configure(binder, config):
         binder.bind(
             sqlite3.Connection,
             to=sqlite3.Connection(config['DB_CONNECTION_STRING']),
@@ -85,6 +85,7 @@ class InjectorView(View):
     def dispatch_request(self, **kwargs):
         # Not @injected
         request_scope = self._injector.get(RequestScope)
+        request_scope.reset()
         handler = self._handler
         if self._handler_class:
             instance = self._injector.get(self._handler_class)
@@ -171,10 +172,11 @@ class decorator(object):
             def provides_cache(self, app):
                 return Cache(app)
 
+        app = Flask(__name__)
         builder = Builder([view], [CacheModule()], config={
             # Cache configuration keys here
             })
-        app = builder.build()
+        builder.init_app(app)
         app.run()
     """
 

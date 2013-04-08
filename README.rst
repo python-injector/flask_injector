@@ -60,8 +60,8 @@ available to the application. Note that in this example we also use the
 injector to gain access to the `flask.Config`, which is bound by `FlaskInjector`::
 
     # Configure our SQLite connection object
-    def configure(binder):
-        config = binder.injector.get(Config)
+    @inject(config=Config)
+    def configure(binder, config):
         binder.bind(
             sqlite3.Connection,
             to=sqlite3.Connection(config['DB_CONNECTION_STRING']),
@@ -122,8 +122,8 @@ of `injector.Module` or a callable taking an `injector.Binder` instance.
 
 ::
 
-    def configure_ext(binder):
-        app = binder.get(Flask)
+    @inject(app=Flask)
+    def configure_ext(binder, app):
         binder.bind(ExtClass, to=ExtClass(app), scope=singleton)
 
     def main():
@@ -132,6 +132,7 @@ of `injector.Module` or a callable taking an `injector.Binder` instance.
             EXT_CONFIG_VAR='some_value',
         )
         fi = FlaskInjector([view], [configure_ext])
+        fi.init_app(app)
         app.run()
 
 *Make sure to bind extension objects as singletons.*
@@ -168,8 +169,8 @@ And to register the Flask-SQLAlchemy extension.
     from flast.ext.sqlalchemy import SQLAlchemy
 
     class SQLAlchemyModule(Module):
-        def configure(self, binder):
-            app = binder.injector.get(Flask)
+        @inject(app=Flask)
+        def configure(self, binder, app):
             db = self.configure_db(app)
             binder.bind(SQLAlchemy, to=db, scope=singleton)
 
@@ -190,8 +191,8 @@ Working Example 2: Flask-Cache integration
 
     class CacheModule(Module):
         """Configure the application."""
-        def configure(self, binder):
-            app = binder.injector.get(Flask)
+        @inject(app=Flask)
+        def configure(self, binder, app):
             binder.bind(Cache, to=Cache(app), scope=singleton)
 
 
