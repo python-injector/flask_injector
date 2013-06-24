@@ -8,98 +8,33 @@
 #
 # Author: Alec Thomas <alec@swapoff.org>
 
-"""Flask-Injector - A dependency-injection adapter for Flask.
+from __future__ import absolute_import, division, print_function, unicode_literals
 
-The following example illustrates function and class-based views with
-dependency-injection:
+import functools
 
-    @route("/bar")
-    def bar():
-        return render("bar.html")
-
-
-    # Route with injection
-    @route("/foo")
-    @inject(db=sqlite3.Connection)
-    def foo(db):
-        users = db.execute('SELECT * FROM users').all()
-        return render("foo.html")
-
-
-    @route('/waz')
-    class Waz(object):
-        @inject(db=sqlite3.Connection)
-        def __init__(self, db):
-            self.db = db
-
-        @route("/waz")
-        def waz(self):
-            users = db.execute('SELECT * FROM users').all()
-            return 'waz'
-
-
-    @inject(config=Config)
-    def configure(binder, config):
-        binder.bind(
-            sqlite3.Connection,
-            to=sqlite3.Connection(config['DB_CONNECTION_STRING']),
-            scope=request,
-            )
-
-
-    def main():
-        views = [foo, bar, Waz]
-        modules = [configure]
-        app = Flask(__name__)
-        app.config.update({
-            'DB_CONNECTION_STRING': ':memory:',
-            })
-        flask_injector = FlaskInjector(views, modules)
-        injector = flask_injector.init_app(app)
-        app.run()
-"""
-
-from __future__ import absolute_import
-
-import inspect
-from werkzeug.local import Local, LocalManager
-from injector import Injector, Module, Scope, ScopeDecorator, singleton, InstanceProvider
 import flask
+from injector import Injector
 from flask import Config, Request
-from flask.views import View
+from werkzeug.local import Local, LocalManager
+from injector import Module, Scope, ScopeDecorator, singleton, InstanceProvider
 
 
 __author__ = 'Alec Thomas <alec@swapoff.org>'
 __version__ = '0.2.0'
-__all__ = ['FlaskInjector', 'request', 'RequestScope', 'Config', 'Request', 'decorator', 'route']
+__all__ = ['request', 'RequestScope', 'Config', 'Request', ]
 
 
-class InjectorView(View):
-    """A Flask View that applies argument injection to a decorated function."""
+def wrap_fun(fun, injector):
+    @functools.wraps(fun)
+    def wrapper(*args, **kwargs):
+        injections = injector.args_to_inject(
+            function=fun,
+            bindings=fun.__bindings__,
+            owner_key=fun.__module__,
+        )
+        return fun(*args, **dict(injections, **kwargs))
 
-    def __init__(self, handler, injector, handler_class=None):
-        self._handler = handler
-        self._injector = injector
-        self._handler_class = handler_class
-
-    def dispatch_request(self, **kwargs):
-        # Not @injected
-        self._injector.get(RequestScope).reset()
-        handler = self._handler
-        if self._handler_class:
-            instance = self._injector.get(self._handler_class)
-            handler = self._handler.__get__(instance, self._handler_class)
-        if not hasattr(handler, '__bindings__'):
-            return handler(**kwargs)
-        bindings = self._injector.args_to_inject(
-            function=handler,
-            bindings=handler.__bindings__,
-            owner_key=handler.__module__,
-            )
-        try:
-            return self._handler(**dict(bindings, **kwargs))
-        finally:
-            self._injector.get(RequestScope).reset()
+    return wrapper
 
 
 class RequestScope(Scope):
@@ -131,196 +66,81 @@ class RequestScope(Scope):
 request = ScopeDecorator(RequestScope)
 
 
-def route(*args, **kwargs):
-    """Decorate a function as a view endpoint."""
-    def _wrap(f):
-        if not hasattr(f, '__views__'):
-            f.__views__ = []
-        f.__views__.append((args, kwargs))
-        return f
-    return _wrap
+def init_app(app, modules=[], request_scope_class=RequestScope):
+    '''
+    Initializes Injector for the application.
+
+    .. note:: Needs to be called right after an application is created (eg. before
+        any views, signal handlers etc. are registered).
+
+    :param app: Application to configure
+    :param modules: Configuration for newly created :class:`injector.Injector`
+    :type app: :class:`flask.Flask`
+    :type modules: Iterable of configuration modules
+    :rtype: :class:`injector.Injector`
+    '''
+    injector = Injector(
+        [FlaskModule(app=app, request_scope_class=request_scope_class)] +
+        list(modules))
+
+    @app.before_request
+    def before_request():
+        injector.get(request_scope_class).reset()
+
+    return injector
 
 
-class decorator(object):
-    """Convert a Flask extension decorator to a Flask-Injector decorator.
+def post_init_app(app, injector, request_scope_class=RequestScope):
+    '''
+    Needs to be called after all views, signal handlers, etc. are registered.
 
-    Normally, Flask extension decorators are used like so:
+    :type app: :class:`flask.Flask`
+    :type injector: :class:`injector.Injector`
+    '''
 
-        app = Flask(__name__)
-        cache = Cache(app)
+    def w(fun):
+        if hasattr(fun, '__bindings__'):
+            fun = wrap_fun(fun, injector)
+        elif hasattr(fun, 'view_class'):
+            current_class = fun.view_class
 
-        @cache.cached(timeout=30)
-        def route():
-            return 'Hello world'
+            def cls(**kwargs):
+                return injector.create_object(
+                    current_class, additional_kwargs=kwargs)
 
-    As this requires global state (Flask app and Cache object), this class
-    exists to inject the provided class instance on-demand. eg.
+            fun.view_class = cls
 
-        cached = decorator(Cache.cached)
+        return fun
 
-        ...
+    def process_dict(d):
+        for key, value in d.items():
+            if isinstance(value, list):
+                value[:] = [w(fun) for fun in value]
+            elif hasattr(value, '__call__'):
+                d[key] = w(value)
 
-        @cached(timeout=30)
-        def route():
-            return 'Hello world'
+    for container in (
+            app.view_functions,
+            app.before_request_funcs,
+            app.after_request_funcs,
+            app.teardown_request_funcs,
+            app.template_context_processors,
+    ):
+        process_dict(container)
 
-    The Cache instance must be provided in an Injector module:
+    def tearing_down(sender, exc=None):
+        injector.get(request_scope_class).reset()
 
-        class CacheModule(Module):
-            @provides(Cache)
-            @singleton
-            @inject(app=Flask)
-            def provides_cache(self, app):
-                return Cache(app)
-
-        app = Flask(__name__)
-        builder = Builder([view], [CacheModule()], config={
-            # Cache configuration keys here
-            })
-        builder.init_app(app)
-        app.run()
-    """
-
-    class State(object):
-        def __init__(self, f):
-            self.f = f
-            self.args = None
-            self.kwargs = None
-
-        def apply(self, injector, view):
-            cls = self.f.im_class
-            instance = injector.get(cls)
-            decorator = self.f.__get__(instance, cls)
-            return decorator(*self.args, **self.kwargs)(view)
-
-    # Mapping from extension type to extension decorator
-    ext_registry = {}
-    state_registry = []
-
-    def __init__(self, f):
-        # cached = decorator(Cache.cached)
-        decorator.ext_registry[f.im_class] = f
-        self.state = decorator.State(f)
-        decorator.state_registry.append(self.state)
-
-    def __call__(self, *args, **kwargs):
-        # @cached(timeout=30)
-        self.state.args = args
-        self.state.kwargs = kwargs
-
-        def wrap(f):
-            if not hasattr(f, '__decorators__'):
-                f.__decorators__ = []
-            f.__decorators__.append(self.state)
-            return f
-
-        return wrap
+    app.teardown_request(tearing_down)
 
 
 class FlaskModule(Module):
-    def __init__(self, app, views, modules):
+    def __init__(self, app, request_scope_class=RequestScope):
         self.app = app
-        self.views = views
-        self.modules = modules
+        self.request_scope_class = request_scope_class
 
     def configure(self, binder):
-        injector = binder.injector
-        binder.bind_scope(RequestScope)
+        binder.bind_scope(self.request_scope_class)
         binder.bind(flask.Flask, to=self.app, scope=singleton)
         binder.bind(Config, to=self.app.config, scope=singleton)
         binder.bind(Request, to=lambda: flask.request)
-        for module in self.modules:
-            binder.install(module)
-        self._configure_views(injector)
-
-    def _configure_views(self, injector):
-        # Generate views
-        for view in self.views:
-            if inspect.isclass(view):
-                self._reflect_views_from_class(view, injector, self.app)
-            else:
-                assert hasattr(view, '__views__'), '%s is not a view - use @route' % view
-                iview = InjectorView.as_view(view.__name__, handler=view, injector=injector)
-                for args, kwargs in view.__views__:
-                    self._install_route(injector, self.app, view, iview, args, kwargs)
-
-    def _reflect_views_from_class(self, cls, injector, app):
-        class_view = getattr(cls, '__views__', None)
-        assert not class_view or len(class_view[0][0]) == 1, \
-            'Path prefix is the only non-keyword argument allowed on class @view for ' + str(cls)
-        prefix = class_view[0][0] if class_view is not None else ''
-        class_kwargs = class_view[1]
-        for name, method in inspect.getmembers(cls, lambda m: inspect.ismethod(m) and hasattr(m, '__views__')):
-            iview = InjectorView.as_view(name, handler=method, injector=injector, handler_class=cls)
-            for args, kwargs in method.__views__:
-                args = (prefix + args[0],) + args[1:]
-                kwargs = dict(class_kwargs, **kwargs)
-                self._install_route(injector, app, method, iview, args, kwargs)
-
-    def _install_route(self, injector, app, view, iview, args, kwargs):
-        if hasattr(view, '__decorators__'):
-            for state in view.__decorators__:
-                iview = state.apply(injector, iview)
-        app.add_url_rule(*args, view_func=iview, **kwargs)
-
-
-class FlaskInjector(object):
-    """Configures an Injector-enabled Flask app.
-
-    This is achieved by using the @route decorator to mark views as routing
-    endpoints. Flask-Injector maps these to class-based views with
-    dependencies @inject'ed by Injector as keyword arguments.
-
-    Used correctly this completely alleviates the need for most Flask globals.
-
-    Use it like so:
-
-        >>> builder = FlaskInjector(views, modules)
-        >>> app = Flask(__name__)
-        >>> injector = builder.init_app(app)
-
-    Objects bound to the Injector are:
-    - Support for per-request scopes via the @request decorator.
-    - The Flask application object (flask.Flask).
-    - The Flask configuration object (flask.Config).
-    - The current Flask request (flask.Request, usually available as flask.request).
-
-    """
-
-    def __init__(self, views=None, modules=None, inject_native_views=False):
-        """Create a new FlaskInjector.
-
-        :param views: List of Injector-enabled views to add to the Flask app.
-        :param modules: List of Injector Modules to use to configure DI.
-        """
-        self._views = views or []
-        self._modules = modules or []
-        self._inject_native_views = inject_native_views
-
-    def init_app(self, app, injector=None):
-        init_app(app, self._views, self._modules, inject_native_views=self._inject_native_views, injector=injector)
-
-
-def inject_native_views_(app, injector):
-    """Convert existing views in a Flask app to injector aware views."""
-    print app, injector
-    for endpoint, view in app.view_functions.iteritems():
-        injector_aware_view = InjectorView.as_view(endpoint,
-            handler=view, injector=injector)
-        app.view_functions[endpoint] = injector_aware_view
-
-
-def init_app(app, views, modules, inject_native_views=False, injector=None):
-    """Configure FlaskInjector with the provided app.
-
-    :param app: Flask application instance.
-    :returns: Injector instance.
-    """
-    if injector is None:
-        injector = Injector()
-
-    if inject_native_views:
-        inject_native_views_(app, injector)
-
-    injector.binder.install(FlaskModule(app, views, modules))
-    return injector
