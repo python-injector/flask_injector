@@ -84,8 +84,7 @@ class InjectorView(View):
 
     def dispatch_request(self, **kwargs):
         # Not @injected
-        request_scope = self._injector.get(RequestScope)
-        request_scope.reset()
+        self._injector.get(RequestScope).reset()
         handler = self._handler
         if self._handler_class:
             instance = self._injector.get(self._handler_class)
@@ -100,7 +99,7 @@ class InjectorView(View):
         try:
             return self._handler(**dict(bindings, **kwargs))
         finally:
-            request_scope.reset()
+            self._injector.get(RequestScope).reset()
 
 
 class RequestScope(Scope):
@@ -135,7 +134,9 @@ request = ScopeDecorator(RequestScope)
 def route(*args, **kwargs):
     """Decorate a function as a view endpoint."""
     def _wrap(f):
-        f.__view__ = (args, kwargs)
+        if not hasattr(f, '__views__'):
+            f.__views__ = []
+        f.__views__.append((args, kwargs))
         return f
     return _wrap
 
@@ -238,22 +239,23 @@ class FlaskModule(Module):
             if inspect.isclass(view):
                 self._reflect_views_from_class(view, injector, self.app)
             else:
-                assert hasattr(view, '__view__')
+                assert hasattr(view, '__views__'), '%s is not a view - use @route' % view
                 iview = InjectorView.as_view(view.__name__, handler=view, injector=injector)
-                iview = self._install_route(injector, self.app, view, iview, *view.__view__)
+                for args, kwargs in view.__views__:
+                    self._install_route(injector, self.app, view, iview, args, kwargs)
 
     def _reflect_views_from_class(self, cls, injector, app):
-        class_view = getattr(cls, '__view__', None)
-        assert class_view is None or len(class_view[0]) == 1, \
+        class_view = getattr(cls, '__views__', None)
+        assert not class_view or len(class_view[0][0]) == 1, \
             'Path prefix is the only non-keyword argument allowed on class @view for ' + str(cls)
         prefix = class_view[0][0] if class_view is not None else ''
         class_kwargs = class_view[1]
-        for name, method in inspect.getmembers(cls, lambda m: inspect.ismethod(m) and hasattr(m, '__view__')):
-            args, kwargs = method.__view__
-            args = (prefix + args[0],) + args[1:]
-            kwargs = dict(class_kwargs, **kwargs)
+        for name, method in inspect.getmembers(cls, lambda m: inspect.ismethod(m) and hasattr(m, '__views__')):
             iview = InjectorView.as_view(name, handler=method, injector=injector, handler_class=cls)
-            self._install_route(injector, app, method, iview, args, kwargs)
+            for args, kwargs in method.__views__:
+                args = (prefix + args[0],) + args[1:]
+                kwargs = dict(class_kwargs, **kwargs)
+                self._install_route(injector, app, method, iview, args, kwargs)
 
     def _install_route(self, injector, app, view, iview, args, kwargs):
         if hasattr(view, '__decorators__'):
@@ -295,20 +297,30 @@ class FlaskInjector(object):
         self._modules = modules or []
         self._inject_native_views = inject_native_views
 
-    def init_app(self, app):
-        """Configure FlaskInjector with the provided app.
+    def init_app(self, app, injector=None):
+        init_app(app, self._views, self._modules, inject_native_views=self._inject_native_views, injector=injector)
 
-        :param app: Flask application instance.
-        :returns: Injector instance.
-        """
+
+def inject_native_views_(app, injector):
+    """Convert existing views in a Flask app to injector aware views."""
+    print app, injector
+    for endpoint, view in app.view_functions.iteritems():
+        injector_aware_view = InjectorView.as_view(endpoint,
+            handler=view, injector=injector)
+        app.view_functions[endpoint] = injector_aware_view
+
+
+def init_app(app, views, modules, inject_native_views=False, injector=None):
+    """Configure FlaskInjector with the provided app.
+
+    :param app: Flask application instance.
+    :returns: Injector instance.
+    """
+    if injector is None:
         injector = Injector()
 
-        if self._inject_native_views:
-            for endpoint, view in app.view_functions.iteritems():
-                injector_aware_view = InjectorView.as_view(endpoint,
-                    handler=view, injector=injector)
-                app.view_functions[endpoint] = injector_aware_view
+    if inject_native_views:
+        inject_native_views_(app, injector)
 
-        injector.binder.install(FlaskModule(app, self._views, self._modules))
-
-        return injector
+    injector.binder.install(FlaskModule(app, views, modules))
+    return injector

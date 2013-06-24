@@ -98,6 +98,12 @@ class AppModule(Module):
         return db
 
 
+@route('/')
+@route('/<page>')
+def index(page=None):
+    return page or 'none'
+
+
 def main():
     app = Flask(__name__)
     app.config.update(
@@ -106,11 +112,13 @@ def main():
         SQLALCHEMY_DATABASE_URI='sqlite://',
     )
     app.debug = True
-    builder = FlaskInjector([KeyValueStore], [AppModule()])
+    builder = FlaskInjector([index, KeyValueStore], [AppModule()])
     injector = builder.init_app(app)
 
     client = app.test_client()
 
+    response = client.get('/')
+    assert response.status == 200 and response.data == 'none'
     response = client.get('/api/store/')
     print('%s\n%s%s' % (response.status, response.headers, response.data))
     response = client.post('/api/store/', data={'key': 'foo', 'value': 'bar'})
