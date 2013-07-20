@@ -20,7 +20,7 @@ from injector import Module, Scope, ScopeDecorator, singleton, InstanceProvider
 
 
 __author__ = 'Alec Thomas <alec@swapoff.org>'
-__version__ = '0.2.0'
+__version__ = '0.2.1'
 __all__ = ['request', 'RequestScope', 'Config', 'Request', ]
 
 
