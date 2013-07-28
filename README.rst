@@ -5,50 +5,28 @@ Adds `Injector <https://github.com/alecthomas/injector>`_ support to Flask.
 
 Injector is a dependency-injection framework for Python, inspired by Guice.
 
-This brings several benefits to Flask:
-
- - No need for a global "app" object, or globals in general. This makes testing simpler.
- - Explicit assignment of routes at app construction time.
- - Class-based routes with injected arguments.
+This way there's no need to use global Flask objects, which makes testing simpler.
 
 
-Typical application layout
---------------------------
+Example application using flask_injector
+----------------------------------------
 
-The first step is generally to create views. Views are global functions or
-classes marked with the `@route` decorator (t has the same arguments as
-Flask's `@app.route` decorator). Views can have dependencies injected into
-them as keyword arguments by using the `Injector.inject` decorator::
+Create your Flask application::
 
     import sqlite3
-    from flask.ext.injector import FlaskInjector, route
-    from flask import Config
-    from injector import inject
+    from flask import Flask, Config
+    from flask.views import View
+    from flask_injector import init_app, post_init_app
+    from injector import Injector, inject
 
-    @route("/bar")
-    def bar():
-        return render("bar.html")
+    app = Flask(__name__)
 
+Update the `Flask` app configuration as normal, additionally passing in any
+configuration for modules::
 
-    # Route with injection
-    @route("/foo")
-    @inject(db=sqlite3.Connection)
-    def foo(db):
-        users = db.execute('SELECT * FROM users').all()
-        return render("foo.html")
-
-
-    # Class-based route with injected constructor
-    @route('/waz')
-    class Waz(object):
-        @inject(db=sqlite3.Connection)
-        def __init__(self, db):
-            self.db = db
-
-        @route("/waz/<key>")
-        def waz(self, key):
-            users = db.execute('SELECT * FROM users WHERE name=?', (key,)).all()
-            return 'waz'
+    app.config.update(
+        DB_CONNECTION_STRING=':memory:',
+    )
 
 In the Injector world, all dependency configuration and initialization is
 performed in `modules <http://packages.python.org/injector/#module>`_. The
@@ -57,7 +35,7 @@ Flask extensions through modules below.
 
 Accordingly, the next step is to create modules for any objects we want made
 available to the application. Note that in this example we also use the
-injector to gain access to the `flask.Config`, which is bound by `FlaskInjector`::
+injector to gain access to the `flask.Config`::
 
     # Configure our SQLite connection object
     @inject(config=Config)
@@ -66,37 +44,53 @@ injector to gain access to the `flask.Config`, which is bound by `FlaskInjector`
             sqlite3.Connection,
             to=sqlite3.Connection(config['DB_CONNECTION_STRING']),
             scope=request,
-            )
+        )
 
-Instantiate the `Flask` instance in `main()`::
+Now perform Injector Flask application integration initialization. This needs to
+be run before any views, handlers, etc. are configured for the application::
 
-    def main():
-        app = Flask(__name__)
+    injector = init_app(app=app, modules=[configure])
 
-Update the `Flask` app configuration as normal, additionally passing in any
-configuration for modules::
+Configure your application by attaching views, handlers, context processors etc.::
 
-        app.config.update(
-            DB_CONNECTION_STRING=':memory:',
-            )
+    # Putting all views configuration in a function is an example of how can
+    # you stop depending on global app object
+    def configure_views(app):
+        @app.route("/bar")
+        def bar():
+            return render("bar.html")
 
-Create a list of view functions and classes to install into the application::
 
-        views = [foo, bar, Waz]
+        # Route with injection
+        @app.route("/foo")
+        @inject(db=sqlite3.Connection)
+        def foo(db):
+            users = db.execute('SELECT * FROM users').all()
+            return render("foo.html")
 
-Create a list of `Injector` modules  to use for configuring the application state::
 
-        modules = [configure]
+        # Class-based view with injected constructor
+        class Waz(View):
+            @inject(db=sqlite3.Connection)
+            def __init__(self, db):
+                self.db = db
 
-Construct a `FlaskInjector` instance, passing the view list and module list to
-the constructor, and initialize the application with it::
+            def dispatch_request(self, key):
+                users = self.db.execute('SELECT * FROM users WHERE name=?', (key,)).all()
+                return 'waz'
 
-        flask_injector = FlaskInjector(views, modules)
-        injector = flask_injector.init_app(app)
+        app.add_url_rule('/waz/<key>', view_func=Waz.as_view('waz'))
+
+    configure_views(app)
+
+Run the post-initialization step. This needs to be run only after you attached all
+views, handlers etc.::
+
+    post_init_app(app=app, injector=injector)
 
 Run the Flask application as normal::
 
-        app.run()
+    app.run()
 
 See `example.py` for a more complete example, including `Flask-SQLAlchemy` and
 `Flask-Cache` integration.
@@ -131,8 +125,11 @@ of `injector.Module` or a callable taking an `injector.Binder` instance.
         app.config.update(
             EXT_CONFIG_VAR='some_value',
         )
-        fi = FlaskInjector([view], [configure_ext])
-        fi.init_app(app)
+
+        injector = init_app(app=app, modules=[configure_ext])
+        # attach your views etc. here
+        post_init_app(app=app, injector=injector)
+
         app.run()
 
 *Make sure to bind extension objects as singletons.*
@@ -168,10 +165,10 @@ And to register the Flask-SQLAlchemy extension.
 
     from flast.ext.sqlalchemy import SQLAlchemy
 
-    class SQLAlchemyModule(Module):
-        @inject(app=Flask)
-        def configure(self, binder, app):
-            db = self.configure_db(app)
+    @inject(app=Flask)
+    class FlaskSQLAlchemyModule(Module):
+        def configure(self, binder):
+            db = self.configure_db(self.app)
             binder.bind(SQLAlchemy, to=db, scope=singleton)
 
         def configure_db(self, app):
@@ -189,10 +186,10 @@ Working Example 2: Flask-Cache integration
 
 ::
 
+    @inject(app=Flask)
     class CacheModule(Module):
         """Configure the application."""
-        @inject(app=Flask)
-        def configure(self, binder, app):
-            binder.bind(Cache, to=Cache(app), scope=singleton)
+        def configure(self, binder):
+            binder.bind(Cache, to=Cache(self.app), scope=singleton)
 
 
