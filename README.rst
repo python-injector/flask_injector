@@ -1,6 +1,11 @@
 Flask-Injector
 ==============
 
+.. image:: https://secure.travis-ci.org/alecthomas/flask_injector.png?branch=master
+   :alt: Build status
+   :target: https://travis-ci.org/alecthomas/flask_injector
+
+
 Adds `Injector <https://github.com/alecthomas/injector>`_ support to Flask.
 
 Injector is a dependency-injection framework for Python, inspired by Guice.
