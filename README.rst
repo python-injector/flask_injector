@@ -11,7 +11,9 @@ This way there's no need to use global Flask objects, which makes testing simple
 Example application using flask_injector
 ----------------------------------------
 
-Create your Flask application::
+Create your Flask application:
+
+.. code:: python
 
     import sqlite3
     from flask import Flask, Config
@@ -22,7 +24,9 @@ Create your Flask application::
     app = Flask(__name__)
 
 Update the `Flask` app configuration as normal, additionally passing in any
-configuration for modules::
+configuration for modules:
+
+.. code:: python
 
     app.config.update(
         DB_CONNECTION_STRING=':memory:',
@@ -35,7 +39,9 @@ Flask extensions through modules below.
 
 Accordingly, the next step is to create modules for any objects we want made
 available to the application. Note that in this example we also use the
-injector to gain access to the `flask.Config`::
+injector to gain access to the `flask.Config`:
+
+.. code:: python
 
     # Configure our SQLite connection object
     @inject(config=Config)
@@ -47,11 +53,15 @@ injector to gain access to the `flask.Config`::
         )
 
 Now perform Injector Flask application integration initialization. This needs to
-be run before any views, handlers, etc. are configured for the application::
+be run before any views, handlers, etc. are configured for the application:
+
+.. code:: python
 
     injector = init_app(app=app, modules=[configure])
 
-Configure your application by attaching views, handlers, context processors etc.::
+Configure your application by attaching views, handlers, context processors etc.:
+
+.. code:: python
 
     # Putting all views configuration in a function is an example of how can
     # you stop depending on global app object
@@ -84,11 +94,15 @@ Configure your application by attaching views, handlers, context processors etc.
     configure_views(app)
 
 Run the post-initialization step. This needs to be run only after you attached all
-views, handlers etc.::
+views, handlers etc.:
+
+.. code:: python
 
     post_init_app(app=app, injector=injector)
 
-Run the Flask application as normal::
+Run the Flask application as normal:
+
+.. code:: python
 
     app.run()
 
@@ -101,7 +115,7 @@ Supporting Flask Extensions
 Typically, Flask extensions are initialized at the global scope using a
 pattern similar to the following.
 
-::
+.. code:: python
 
     app = Flask(__name__)
     ext = ExtClass(app)
@@ -114,7 +128,7 @@ As we don't have these globals with Flask-Injector we have to configure the
 extension the Injector way - through modules. Modules can either be subclasses
 of `injector.Module` or a callable taking an `injector.Binder` instance.
 
-::
+.. code:: python
 
     @inject(app=Flask)
     def configure_ext(binder, app):
@@ -141,7 +155,7 @@ This is a full working example of integrating Flask-SQLAlchemy.
 
 We use standard SQLAlchemy models rather than the Flask-SQLAlchemy magic.
 
-::
+.. code:: python
 
     from sqlalchemy.ext.declarative import declarative_base
     from sqlalchemy import Column, String
@@ -161,7 +175,7 @@ We use standard SQLAlchemy models rather than the Flask-SQLAlchemy magic.
 
 And to register the Flask-SQLAlchemy extension.
 
-::
+.. code:: python
 
     from flast.ext.sqlalchemy import SQLAlchemy
 
@@ -184,12 +198,10 @@ And to register the Flask-SQLAlchemy extension.
 Working Example 2: Flask-Cache integration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-::
+.. code:: python
 
     @inject(app=Flask)
     class CacheModule(Module):
         """Configure the application."""
         def configure(self, binder):
             binder.bind(Cache, to=Cache(self.app), scope=singleton)
-
-
