@@ -5,7 +5,7 @@ long_description = open('README.rst').read()
 
 setup(
     name='Flask-Injector',
-    version='0.2.0',
+    version='0.3.0c2',
     url='https://github.com/alecthomas/flask_injector',
     license='BSD',
     author='Alec Thomas',
