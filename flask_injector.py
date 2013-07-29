@@ -66,7 +66,7 @@ class RequestScope(Scope):
 request = ScopeDecorator(RequestScope)
 
 
-def init_app(app, modules=[], request_scope_class=RequestScope):
+def init_app(app, modules=[], injector=None, request_scope_class=RequestScope):
     '''
     Initializes Injector for the application.
 
@@ -75,13 +75,17 @@ def init_app(app, modules=[], request_scope_class=RequestScope):
 
     :param app: Application to configure
     :param modules: Configuration for newly created :class:`injector.Injector`
+    :param injector: Injector to initialize app with, if not provided
+        a new instance will be created.
     :type app: :class:`flask.Flask`
     :type modules: Iterable of configuration modules
     :rtype: :class:`injector.Injector`
     '''
-    injector = Injector(
-        [FlaskModule(app=app, request_scope_class=request_scope_class)] +
-        list(modules))
+    injector = injector or Injector()
+    for module in (
+            [FlaskModule(app=app, request_scope_class=request_scope_class)] +
+            list(modules)):
+        injector.binder.install(module)
 
     @app.before_request
     def before_request():

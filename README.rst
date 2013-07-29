@@ -66,6 +66,14 @@ be run before any views, handlers, etc. are configured for the application:
 
     injector = init_app(app=app, modules=[configure])
 
+You can also provide already existing Injector instance:
+
+.. code:: python
+
+   injector = your_initialization_code()
+   # ...
+   init_app(app=app, injector=injector)
+
 Configure your application by attaching views, handlers, context processors etc.:
 
 .. code:: python
