@@ -16,6 +16,6 @@ setup(
     zip_safe=True,
     platforms='any',
     install_requires=[
-        'Flask', 'injector',
+        'Flask', 'injector>=0.7.4',
     ],
 )
