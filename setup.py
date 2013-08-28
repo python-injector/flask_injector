@@ -10,12 +10,15 @@ setup(
     license='BSD',
     author='Alec Thomas',
     author_email='alec@swapoff.org',
-    description='Adds Injector support to Flask.',
+    description='Adds Injector (dependency injection framework) support to Flask.',
     long_description=long_description,
     py_modules=['flask_injector'],
     zip_safe=True,
     platforms='any',
     install_requires=[
         'Flask', 'injector>=0.7.4',
+    ],
+    keywords=[
+        'Dependency Injection', 'DI', 'Flask',
     ],
 )
