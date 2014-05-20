@@ -54,13 +54,38 @@ class RequestScope(Scope):
         self._local_manager = LocalManager([self._locals])
         self.reset()
 
-    def get(self, key, provider):
-        try:
-            return self._locals.scope[key]
-        except KeyError:
-            provider = InstanceProvider(provider.get())
-            self._locals.scope[key] = provider
-            return provider
+    try:
+        from injector import BounderProvider  # noqa
+    except ImportError:
+        def get(self, key, provider):
+            try:
+                return self._locals.scope[key]
+            except KeyError:
+                provider = InstanceProvider(provider.get())
+                self._locals.scope[key] = provider
+                return provider
+    else:
+        from injector import Provider
+
+        class CachedProviderWrapper(Provider):
+            def __init__(self, old_provider):
+                self._old_provider = old_provider
+                self._cache = {}
+
+            def get(self, injector):
+                key = id(injector)
+                try:
+                    return self._cache[key]
+                except KeyError:
+                    instance = self._cache[key] = self._old_provider.get(injector)
+                    return instance
+
+        def get(self, key, provider):
+            try:
+                return self._locals.scope[key]
+            except KeyError:
+                new_provider = self._locals.scope[key] = CachedProviderWrapper(provider)
+                return new_provider
 
 
 request = ScopeDecorator(RequestScope)
