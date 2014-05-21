@@ -55,7 +55,7 @@ class RequestScope(Scope):
         self.reset()
 
     try:
-        from injector import BounderProvider  # noqa
+        from injector import BoundedProvider  # noqa
     except ImportError:
         def get(self, key, provider):
             try:
