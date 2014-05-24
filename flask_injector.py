@@ -21,7 +21,7 @@ from injector import Module, Provider, Scope, ScopeDecorator, singleton, Instanc
 
 __author__ = 'Alec Thomas <alec@swapoff.org>'
 __version__ = '0.3.3'
-__all__ = ['request', 'RequestScope', 'Config', 'Request', ]
+__all__ = ['init_app', 'post_init_app', 'request', 'RequestScope', 'Config', 'Request', ]
 
 
 def wrap_fun(fun, injector):
