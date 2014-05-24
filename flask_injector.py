@@ -20,7 +20,7 @@ from injector import Module, Scope, ScopeDecorator, singleton, InstanceProvider
 
 
 __author__ = 'Alec Thomas <alec@swapoff.org>'
-__version__ = '0.3.2'
+__version__ = '0.3.3'
 __all__ = ['request', 'RequestScope', 'Config', 'Request', ]
 
 
@@ -55,7 +55,7 @@ class RequestScope(Scope):
         self.reset()
 
     try:
-        from injector import BoundedProvider  # noqa
+        from injector import BoundProvider  # noqa
     except ImportError:
         def get(self, key, provider):
             try:

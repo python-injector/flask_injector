@@ -1,10 +1,12 @@
-from injector import inject, Injector
+import warnings
+
+from injector import CallableProvider, inject
 from flask import Flask
 from flask.templating import render_template_string
 from flask.views import View
 from nose.tools import eq_
 
-from flask_injector import init_app, post_init_app
+from flask_injector import init_app, post_init_app, request
 
 
 def test_injections():
@@ -101,3 +103,28 @@ def test_resets():
         c.get('/')
 
     eq_(counter[0], 2)
+
+
+def test_doesnt_raise_deprecation_warning():
+    app = Flask(__name__)
+
+    def provide_str():
+        return 'this is string'
+
+    def configure(binder):
+        binder.bind(str, to=CallableProvider(provide_str), scope=request)
+
+    injector = init_app(app, modules=[configure])
+
+    @app.route('/')
+    @inject(s=str)
+    def index(s):
+        return s
+
+    post_init_app(app, injector)
+
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        with app.test_client() as c:
+            c.get('/')
+        eq_(len(w), 0, map(str, w))
