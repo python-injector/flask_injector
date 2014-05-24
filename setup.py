@@ -18,8 +18,7 @@ if __name__ == '__main__':
         license='BSD',
         author='Alec Thomas',
         author_email='alec@swapoff.org',
-        description=
-            'Adds Injector, a Dependency Injection framework, support to Flask.',
+        description='Adds Injector, a Dependency Injection framework, support to Flask.',
         long_description=long_description,
         py_modules=['flask_injector'],
         zip_safe=True,
