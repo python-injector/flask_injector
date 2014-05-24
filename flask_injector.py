@@ -16,7 +16,7 @@ import flask
 from injector import Injector
 from flask import Config, Request
 from werkzeug.local import Local, LocalManager
-from injector import Module, Scope, ScopeDecorator, singleton, InstanceProvider
+from injector import Module, Provider, Scope, ScopeDecorator, singleton, InstanceProvider
 
 
 __author__ = 'Alec Thomas <alec@swapoff.org>'
@@ -35,6 +35,20 @@ def wrap_fun(fun, injector):
         return fun(*args, **dict(injections, **kwargs))
 
     return wrapper
+
+
+class CachedProviderWrapper(Provider):
+    def __init__(self, old_provider):
+        self._old_provider = old_provider
+        self._cache = {}
+
+    def get(self, injector):
+        key = id(injector)
+        try:
+            return self._cache[key]
+        except KeyError:
+            instance = self._cache[key] = self._old_provider.get(injector)
+            return instance
 
 
 class RequestScope(Scope):
@@ -65,21 +79,6 @@ class RequestScope(Scope):
                 self._locals.scope[key] = provider
                 return provider
     else:
-        from injector import Provider
-
-        class CachedProviderWrapper(Provider):
-            def __init__(self, old_provider):
-                self._old_provider = old_provider
-                self._cache = {}
-
-            def get(self, injector):
-                key = id(injector)
-                try:
-                    return self._cache[key]
-                except KeyError:
-                    instance = self._cache[key] = self._old_provider.get(injector)
-                    return instance
-
         def get(self, key, provider):
             try:
                 return self._locals.scope[key]
