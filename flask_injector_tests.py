@@ -128,3 +128,27 @@ def test_doesnt_raise_deprecation_warning():
         with app.test_client() as c:
             c.get('/')
         eq_(len(w), 0, map(str, w))
+
+
+def test_jinja_env_globals_support_injection():
+    app = Flask(__name__)
+
+    def configure(binder):
+        binder.bind(str, to='xyz')
+
+    injector = init_app(app, modules=[configure])
+
+    @inject(s=str)
+    def do_something_helper(s):
+        return s
+
+    app.jinja_env.globals['do_something'] = do_something_helper
+
+    @app.route('/')
+    def index():
+        return render_template_string('{{ do_something() }}')
+
+    post_init_app(app, injector)
+
+    with app.test_client() as c:
+        eq_(c.get('/').get_data(as_text=True), 'xyz')

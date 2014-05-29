@@ -18,6 +18,18 @@ GitHub project page: https://github.com/alecthomas/flask_injector
 
 PyPI package page: https://pypi.python.org/pypi/Flask-Injector
 
+Features
+--------
+
+Flask-Injector lets you inject dependencies into:
+
+* views
+* `before_request` handlers
+* `after_request` handlers
+* `teardown_request` handlers
+* template context processors
+* Jinja environment globals (functions in `app.jinja_env.globals`)
+
 
 Example application using flask_injector
 ----------------------------------------

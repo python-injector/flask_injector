@@ -15,12 +15,12 @@ import functools
 import flask
 from injector import Injector
 from flask import Config, Request
-from werkzeug.local import Local, LocalManager
+from werkzeug.local import Local, LocalManager, LocalProxy
 from injector import Module, Provider, Scope, ScopeDecorator, singleton, InstanceProvider
 
 
 __author__ = 'Alec Thomas <alec@swapoff.org>'
-__version__ = '0.3.3'
+__version__ = '0.3.4'
 __all__ = ['init_app', 'post_init_app', 'request', 'RequestScope', 'Config', 'Request', ]
 
 
@@ -127,16 +127,17 @@ def post_init_app(app, injector, request_scope_class=RequestScope):
     '''
 
     def w(fun):
-        if hasattr(fun, '__bindings__'):
-            fun = wrap_fun(fun, injector)
-        elif hasattr(fun, 'view_class'):
-            current_class = fun.view_class
+        if not isinstance(fun, LocalProxy):
+            if hasattr(fun, '__bindings__'):
+                fun = wrap_fun(fun, injector)
+            elif hasattr(fun, 'view_class'):
+                current_class = fun.view_class
 
-            def cls(**kwargs):
-                return injector.create_object(
-                    current_class, additional_kwargs=kwargs)
+                def cls(**kwargs):
+                    return injector.create_object(
+                        current_class, additional_kwargs=kwargs)
 
-            fun.view_class = cls
+                fun.view_class = cls
 
         return fun
 
@@ -153,6 +154,7 @@ def post_init_app(app, injector, request_scope_class=RequestScope):
             app.after_request_funcs,
             app.teardown_request_funcs,
             app.template_context_processors,
+            app.jinja_env.globals,
     ):
         process_dict(container)
 
