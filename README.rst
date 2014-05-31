@@ -75,61 +75,41 @@ injector to gain access to the `flask.Config`:
             scope=request,
         )
 
-Now perform Injector Flask application integration initialization. This needs to
-be run before any views, handlers, etc. are configured for the application:
-
-.. code:: python
-
-    injector = init_app(app=app, modules=[configure])
-
-You can also provide already existing Injector instance:
-
-.. code:: python
-
-   injector = your_initialization_code()
-   # ...
-   init_app(app=app, injector=injector)
-
 Configure your application by attaching views, handlers, context processors etc.:
 
 .. code:: python
 
-    # Putting all views configuration in a function is an example of how can
-    # you stop depending on global app object
-    def configure_views(app):
-        @app.route("/bar")
-        def bar():
-            return render("bar.html")
+    @app.route("/bar")
+    def bar():
+        return render("bar.html")
 
 
-        # Route with injection
-        @app.route("/foo")
+    # Route with injection
+    @app.route("/foo")
+    @inject(db=sqlite3.Connection)
+    def foo(db):
+        users = db.execute('SELECT * FROM users').all()
+        return render("foo.html")
+
+
+    # Class-based view with injected constructor
+    class Waz(View):
         @inject(db=sqlite3.Connection)
-        def foo(db):
-            users = db.execute('SELECT * FROM users').all()
-            return render("foo.html")
+        def __init__(self, db):
+            self.db = db
 
+        def dispatch_request(self, key):
+            users = self.db.execute('SELECT * FROM users WHERE name=?', (key,)).all()
+            return 'waz'
 
-        # Class-based view with injected constructor
-        class Waz(View):
-            @inject(db=sqlite3.Connection)
-            def __init__(self, db):
-                self.db = db
+    app.add_url_rule('/waz/<key>', view_func=Waz.as_view('waz'))
 
-            def dispatch_request(self, key):
-                users = self.db.execute('SELECT * FROM users WHERE name=?', (key,)).all()
-                return 'waz'
-
-        app.add_url_rule('/waz/<key>', view_func=Waz.as_view('waz'))
-
-    configure_views(app)
-
-Run the post-initialization step. This needs to be run only after you attached all
-views, handlers etc.:
+Initialize FlaskInjecto. This needs to be run *after* you attached all
+views, handlers, context processors and template globals:
 
 .. code:: python
 
-    post_init_app(app=app, injector=injector)
+    FlaskInjector(app=app, modules=[configure])
 
 Run the Flask application as normal:
 

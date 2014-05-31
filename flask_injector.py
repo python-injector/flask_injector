@@ -11,6 +11,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import functools
+import warnings
 
 import flask
 from injector import Injector
@@ -21,7 +22,7 @@ from injector import Module, Provider, Scope, ScopeDecorator, singleton, Instanc
 
 __author__ = 'Alec Thomas <alec@swapoff.org>'
 __version__ = '0.3.4'
-__all__ = ['init_app', 'post_init_app', 'request', 'RequestScope', 'Config', 'Request', ]
+__all__ = ['init_app', 'post_init_app', 'request', 'RequestScope', 'Config', 'Request', 'FlaskInjector', ]
 
 
 def wrap_fun(fun, injector):
@@ -104,6 +105,30 @@ class RequestScope(Scope):
 request = ScopeDecorator(RequestScope)
 
 
+class FlaskInjector(object):
+    def __init__(self, app, modules=[], injector=None, request_scope_class=RequestScope):
+        """Initializes Injector for the application.
+
+        .. note::
+
+            Needs to be called *after* all views, signal handlers, template globals
+            and context processors are registered.
+
+        :param app: Application to configure
+        :param modules: Configuration for newly created :class:`injector.Injector`
+        :param injector: Injector to initialize app with, if not provided
+            a new instance will be created.
+        :type app: :class:`flask.Flask`
+        :type modules: Iterable of configuration modules
+        :rtype: :class:`injector.Injector`
+        """
+        injector = _init_app(app, modules, injector, request_scope_class)
+        _post_init_app(app, injector, request_scope_class)
+
+        self.injector = injector
+        self.app = app
+
+
 def init_app(app, modules=[], injector=None, request_scope_class=RequestScope):
     '''
     Initializes Injector for the application.
@@ -116,6 +141,14 @@ def init_app(app, modules=[], injector=None, request_scope_class=RequestScope):
     :type modules: Iterable of configuration modules
     :rtype: :class:`injector.Injector`
     '''
+
+    warnings.warn(
+        "init_app and post_init_app are deprecated in favour of FlaskInjector. "
+        "Please consult README for details.")
+    return _init_app(app, modules, injector, request_scope_class)
+
+
+def _init_app(app, modules, injector, request_scope_class):
     injector = injector or Injector()
     for module in (
             [FlaskModule(app=app, request_scope_class=request_scope_class)] +
@@ -141,7 +174,13 @@ def post_init_app(app, injector, request_scope_class=RequestScope):
     :type app: :class:`flask.Flask`
     :type injector: :class:`injector.Injector`
     '''
+    warnings.warn(
+        "init_app and post_init_app are deprecated in favour of FlaskInjector. "
+        "Please consult README for details.")
+    _post_init_app(app, injector, request_scope_class)
 
+
+def _post_init_app(app, injector, request_scope_class):
     for container in (
             app.view_functions,
             app.before_request_funcs,
