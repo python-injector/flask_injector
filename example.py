@@ -80,8 +80,10 @@ def configure_views(app, cached):
         return response
 
 
-@inject(app=Flask)
 class AppModule(Module):
+    def __init__(self, app):
+        self.app = app
+
     """Configure the application."""
     def configure(self, binder):
         # We configure the DB here, explicitly, as Flask-SQLAlchemy requires
@@ -110,7 +112,7 @@ def main():
     )
     app.debug = True
 
-    injector = Injector([AppModule])
+    injector = Injector([AppModule(app)])
     configure_views(app=app, cached=injector.get(Cache).cached)
 
     FlaskInjector(app=app, injector=injector)
