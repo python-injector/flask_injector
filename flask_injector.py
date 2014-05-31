@@ -25,16 +25,30 @@ __all__ = ['init_app', 'post_init_app', 'request', 'RequestScope', 'Config', 'Re
 
 
 def wrap_fun(fun, injector):
-    @functools.wraps(fun)
-    def wrapper(*args, **kwargs):
-        injections = injector.args_to_inject(
-            function=fun,
-            bindings=fun.__bindings__,
-            owner_key=fun.__module__,
-        )
-        return fun(*args, **dict(injections, **kwargs))
+    if isinstance(fun, LocalProxy):
+        return fun
 
-    return wrapper
+    if hasattr(fun, '__bindings__'):
+        @functools.wraps(fun)
+        def wrapper(*args, **kwargs):
+            injections = injector.args_to_inject(
+                function=fun,
+                bindings=fun.__bindings__,
+                owner_key=fun.__module__,
+            )
+            return fun(*args, **dict(injections, **kwargs))
+
+        return wrapper
+    elif hasattr(fun, 'view_class'):
+        current_class = fun.view_class
+
+        def cls(**kwargs):
+            return injector.create_object(
+                current_class, additional_kwargs=kwargs)
+
+        fun.view_class = cls
+
+    return fun
 
 
 class CachedProviderWrapper(Provider):
@@ -111,6 +125,14 @@ def init_app(app, modules=[], injector=None, request_scope_class=RequestScope):
     return injector
 
 
+def process_dict(d, injector):
+    for key, value in d.items():
+        if isinstance(value, list):
+            value[:] = [wrap_fun(fun, injector) for fun in value]
+        elif hasattr(value, '__call__'):
+            d[key] = wrap_fun(value, injector)
+
+
 def post_init_app(app, injector, request_scope_class=RequestScope):
     '''
     Needs to be called after all views, signal handlers, template globals
@@ -120,28 +142,6 @@ def post_init_app(app, injector, request_scope_class=RequestScope):
     :type injector: :class:`injector.Injector`
     '''
 
-    def w(fun):
-        if not isinstance(fun, LocalProxy):
-            if hasattr(fun, '__bindings__'):
-                fun = wrap_fun(fun, injector)
-            elif hasattr(fun, 'view_class'):
-                current_class = fun.view_class
-
-                def cls(**kwargs):
-                    return injector.create_object(
-                        current_class, additional_kwargs=kwargs)
-
-                fun.view_class = cls
-
-        return fun
-
-    def process_dict(d):
-        for key, value in d.items():
-            if isinstance(value, list):
-                value[:] = [w(fun) for fun in value]
-            elif hasattr(value, '__call__'):
-                d[key] = w(value)
-
     for container in (
             app.view_functions,
             app.before_request_funcs,
@@ -150,7 +150,7 @@ def post_init_app(app, injector, request_scope_class=RequestScope):
             app.template_context_processors,
             app.jinja_env.globals,
     ):
-        process_dict(container)
+        process_dict(container, injector)
 
     def reset_request_scope(*args, **kwargs):
         injector.get(request_scope_class).reset()
