@@ -94,9 +94,6 @@ def init_app(app, modules=[], injector=None, request_scope_class=RequestScope):
     '''
     Initializes Injector for the application.
 
-    .. note:: Needs to be called right after an application is created (eg. before
-        any views, signal handlers etc. are registered).
-
     :param app: Application to configure
     :param modules: Configuration for newly created :class:`injector.Injector`
     :param injector: Injector to initialize app with, if not provided
@@ -111,16 +108,13 @@ def init_app(app, modules=[], injector=None, request_scope_class=RequestScope):
             list(modules)):
         injector.binder.install(module)
 
-    @app.before_request
-    def before_request():
-        injector.get(request_scope_class).reset()
-
     return injector
 
 
 def post_init_app(app, injector, request_scope_class=RequestScope):
     '''
-    Needs to be called after all views, signal handlers, etc. are registered.
+    Needs to be called after all views, signal handlers, template globals
+    and context processors are registered.
 
     :type app: :class:`flask.Flask`
     :type injector: :class:`injector.Injector`
@@ -158,10 +152,11 @@ def post_init_app(app, injector, request_scope_class=RequestScope):
     ):
         process_dict(container)
 
-    def tearing_down(sender, exc=None):
+    def reset_request_scope(*args, **kwargs):
         injector.get(request_scope_class).reset()
 
-    app.teardown_request(tearing_down)
+    app.before_request_funcs.setdefault(None, []).insert(0, reset_request_scope)
+    app.teardown_request(reset_request_scope)
 
 
 class FlaskModule(Module):
