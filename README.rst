@@ -40,7 +40,7 @@ Example application using Flask-Injector
     from flask import Flask, Config
     from flask.views import View
     from flask_injector import FlaskInjector
-    from injector import Injector, inject
+    from injector import inject
 
     app = Flask(__name__)
 
@@ -70,7 +70,6 @@ Example application using Flask-Injector
             return 'waz'
 
     app.add_url_rule('/waz/<key>', view_func=Waz.as_view('waz'))
-
 
 
     # In the Injector world, all dependency configuration and initialization is
@@ -139,61 +138,3 @@ of `injector.Module` or a callable taking an `injector.Binder` instance.
         app.run()
 
 *Make sure to bind extension objects as singletons.*
-
-Working Example 1: Flask-SQLAlchemy integration
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-This is a full working example of integrating Flask-SQLAlchemy.
-
-We use standard SQLAlchemy models rather than the Flask-SQLAlchemy magic.
-
-.. code:: python
-
-    from sqlalchemy.ext.declarative import declarative_base
-    from sqlalchemy import Column, String
-
-    Base = declarative_base()
-
-
-    class KeyValue(Base):
-        __tablename__ = 'data'
-
-        key = Column(String, primary_key=True)
-        value = Column(String)
-
-        def __init__(self, key, value):
-            self.key = key
-            self.value = value
-
-And to register the Flask-SQLAlchemy extension.
-
-.. code:: python
-
-    from flast.ext.sqlalchemy import SQLAlchemy
-
-    @inject(app=Flask)
-    class FlaskSQLAlchemyModule(Module):
-        def configure(self, binder):
-            db = self.configure_db(self.app)
-            binder.bind(SQLAlchemy, to=db, scope=singleton)
-
-        def configure_db(self, app):
-            db = SQLAlchemy(app)
-            Base.metadata.create_all(db.engine)
-            db.session.add_all([
-                KeyValue('hello', 'world'),
-                KeyValue('goodbye', 'cruel world'),
-            ])
-            db.session.commit()
-            return db
-
-Working Example 2: Flask-Cache integration
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. code:: python
-
-    @inject(app=Flask)
-    class CacheModule(Module):
-        """Configure the application."""
-        def configure(self, binder):
-            binder.bind(Cache, to=Cache(self.app), scope=singleton)
