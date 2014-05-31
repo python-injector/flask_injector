@@ -131,9 +131,9 @@ of `injector.Module` or a callable taking an `injector.Binder` instance.
             EXT_CONFIG_VAR='some_value',
         )
 
-        injector = init_app(app=app, modules=[configure_ext])
         # attach your views etc. here
-        post_init_app(app=app, injector=injector)
+
+        post_init_app(app=app, modules=[configure_ext])
 
         app.run()
 

@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 import logging
 
-from injector import Module, inject, singleton
+from injector import Module, Injector, inject, singleton
 from flask import Flask, Request, jsonify
-from flask_injector import init_app, post_init_app
+from flask_injector import FlaskInjector
 from flask.ext.cache import Cache
 from flask.ext.sqlalchemy import SQLAlchemy
 from sqlalchemy.ext.declarative import declarative_base
@@ -109,11 +109,11 @@ def main():
         SQLALCHEMY_DATABASE_URI='sqlite://',
     )
     app.debug = True
-    injector = init_app(app=app, modules=[AppModule])
 
+    injector = Injector([AppModule])
     configure_views(app=app, cached=injector.get(Cache).cached)
 
-    post_init_app(app, injector)
+    FlaskInjector(app=app, injector=injector)
 
     client = app.test_client()
 
