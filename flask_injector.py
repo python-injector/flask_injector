@@ -21,7 +21,7 @@ from injector import Module, Provider, Scope, ScopeDecorator, singleton, Instanc
 
 
 __author__ = 'Alec Thomas <alec@swapoff.org>'
-__version__ = '0.3.4'
+__version__ = '0.4.0'
 __all__ = ['init_app', 'post_init_app', 'request', 'RequestScope', 'Config', 'Request', 'FlaskInjector', ]
 
 
