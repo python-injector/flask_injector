@@ -293,3 +293,38 @@ def test_jinja_env_globals_support_injection():
 
     with app.test_client() as c:
         eq_(c.get('/').get_data(as_text=True), 'xyz')
+
+
+def test_error_handlers_support_injection():
+    app = Flask(__name__)
+
+    class CustomException(Exception):
+        pass
+
+    @app.route('/custom-exception')
+    def custom_exception():
+        raise CustomException()
+
+    @app.errorhandler(404)
+    @inject(s=str)
+    def handle_404(error, s):
+        return s, 404
+
+    @app.errorhandler(CustomException)
+    @inject(s=str)
+    def handle_custom_exception(error, s):
+        return s, 500
+
+    def configure(binder):
+        binder.bind(str, to='injected content')
+
+    FlaskInjector(app=app, modules=[configure])
+
+    with app.test_client() as c:
+        response = c.get('/this-page-does-not-exist')
+        eq_((response.status_code, response.get_data(as_text=True)),
+            (404, 'injected content'))
+
+        response = c.get('/custom-exception')
+        eq_((response.status_code, response.get_data(as_text=True)),
+            (500, 'injected content'))

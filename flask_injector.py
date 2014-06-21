@@ -166,6 +166,18 @@ def process_dict(d, injector):
             d[key] = wrap_fun(value, injector)
 
 
+def process_error_handler_spec(spec, injector):
+    for subspec in spec.values():
+        try:
+            custom_handlers = subspec[None]
+        except KeyError:
+            pass
+        else:
+            custom_handlers[:] = [(error, wrap_fun(fun, injector)) for (error, fun) in custom_handlers]
+
+        process_dict(subspec, injector)
+
+
 def post_init_app(app, injector, request_scope_class=RequestScope):
     '''
     Needs to be called after all views, signal handlers, template globals
@@ -190,6 +202,8 @@ def _post_init_app(app, injector, request_scope_class):
             app.jinja_env.globals,
     ):
         process_dict(container, injector)
+
+    process_error_handler_spec(app.error_handler_spec, injector)
 
     def reset_request_scope(*args, **kwargs):
         injector.get(request_scope_class).reset()
