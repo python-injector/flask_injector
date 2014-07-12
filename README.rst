@@ -136,7 +136,7 @@ of `injector.Module` or a callable taking an `injector.Binder` instance.
 
         # attach your views etc. here
 
-        post_init_app(app=app, modules=[configure_ext])
+        FlaskInjector(app=app, modules=[configure_ext])
 
         app.run()
 
