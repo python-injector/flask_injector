@@ -22,7 +22,7 @@ from injector import Module, Provider, Scope, ScopeDecorator, singleton, Instanc
 
 __author__ = 'Alec Thomas <alec@swapoff.org>'
 __version__ = '0.4.0'
-__all__ = ['init_app', 'post_init_app', 'request', 'RequestScope', 'Config', 'Request', 'FlaskInjector', ]
+__all__ = ['request', 'RequestScope', 'Config', 'Request', 'FlaskInjector', ]
 
 
 def wrap_fun(fun, injector):
@@ -122,40 +122,32 @@ class FlaskInjector(object):
         :type modules: Iterable of configuration modules
         :rtype: :class:`injector.Injector`
         """
-        injector = _init_app(app, modules, injector, request_scope_class)
-        _post_init_app(app, injector, request_scope_class)
+        injector = injector or Injector()
+        for module in (
+                [FlaskModule(app=app, request_scope_class=request_scope_class)] +
+                list(modules)):
+            injector.binder.install(module)
+
+        for container in (
+                app.view_functions,
+                app.before_request_funcs,
+                app.after_request_funcs,
+                app.teardown_request_funcs,
+                app.template_context_processors,
+                app.jinja_env.globals,
+        ):
+            process_dict(container, injector)
+
+        process_error_handler_spec(app.error_handler_spec, injector)
+
+        def reset_request_scope(*args, **kwargs):
+            injector.get(request_scope_class).reset()
+
+        app.before_request_funcs.setdefault(None, []).insert(0, reset_request_scope)
+        app.teardown_request(reset_request_scope)
 
         self.injector = injector
         self.app = app
-
-
-def init_app(app, modules=[], injector=None, request_scope_class=RequestScope):
-    '''
-    Initializes Injector for the application.
-
-    :param app: Application to configure
-    :param modules: Configuration for newly created :class:`injector.Injector`
-    :param injector: Injector to initialize app with, if not provided
-        a new instance will be created.
-    :type app: :class:`flask.Flask`
-    :type modules: Iterable of configuration modules
-    :rtype: :class:`injector.Injector`
-    '''
-
-    warnings.warn(
-        "init_app and post_init_app are deprecated in favour of FlaskInjector. "
-        "Please consult README for details.")
-    return _init_app(app, modules, injector, request_scope_class)
-
-
-def _init_app(app, modules, injector, request_scope_class):
-    injector = injector or Injector()
-    for module in (
-            [FlaskModule(app=app, request_scope_class=request_scope_class)] +
-            list(modules)):
-        injector.binder.install(module)
-
-    return injector
 
 
 def process_dict(d, injector):
@@ -176,40 +168,6 @@ def process_error_handler_spec(spec, injector):
             custom_handlers[:] = [(error, wrap_fun(fun, injector)) for (error, fun) in custom_handlers]
 
         process_dict(subspec, injector)
-
-
-def post_init_app(app, injector, request_scope_class=RequestScope):
-    '''
-    Needs to be called after all views, signal handlers, template globals
-    and context processors are registered.
-
-    :type app: :class:`flask.Flask`
-    :type injector: :class:`injector.Injector`
-    '''
-    warnings.warn(
-        "init_app and post_init_app are deprecated in favour of FlaskInjector. "
-        "Please consult README for details.")
-    _post_init_app(app, injector, request_scope_class)
-
-
-def _post_init_app(app, injector, request_scope_class):
-    for container in (
-            app.view_functions,
-            app.before_request_funcs,
-            app.after_request_funcs,
-            app.teardown_request_funcs,
-            app.template_context_processors,
-            app.jinja_env.globals,
-    ):
-        process_dict(container, injector)
-
-    process_error_handler_spec(app.error_handler_spec, injector)
-
-    def reset_request_scope(*args, **kwargs):
-        injector.get(request_scope_class).reset()
-
-    app.before_request_funcs.setdefault(None, []).insert(0, reset_request_scope)
-    app.teardown_request(reset_request_scope)
 
 
 class FlaskModule(Module):

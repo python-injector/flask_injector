@@ -1,6 +1,11 @@
 Flask-Injector Changelog
 ========================
 
+Version 0.5.0 (not released yet)
+--------------------------------
+
+* Removed ``init_app`` and ``post_init_app`` functions
+
 Version 0.4.0
 -------------
 
