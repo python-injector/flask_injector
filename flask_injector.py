@@ -39,7 +39,7 @@ def wrap_fun(fun, injector):
             return fun(*args, **dict(injections, **kwargs))
 
         return wrapper
-    elif hasattr(fun, 'view_class'):
+    elif hasattr(fun, 'view_class') and isinstance(fun.view_class, type):
         current_class = fun.view_class
 
         def cls(**kwargs):
