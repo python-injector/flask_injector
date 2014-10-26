@@ -224,4 +224,4 @@ def test_view_args_and_class_args_are_passed_to_class_based_views():
     client = app.test_client()
     response = client.get('/bbb')
     print(response.data)
-    eq_(response.data, 'aaa bbb')
+    eq_(response.data, b'aaa bbb')

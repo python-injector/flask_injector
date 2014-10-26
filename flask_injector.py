@@ -43,8 +43,8 @@ def wrap_fun(fun, injector):
         cls = fun.view_class
         name = fun.__name__
 
-        closure_contents = (c.cell_contents for c in fun.func_closure)
-        fun_closure = dict(zip(fun.func_code.co_freevars, closure_contents))
+        closure_contents = (c.cell_contents for c in fun.__closure__)
+        fun_closure = dict(zip(fun.__code__.co_freevars, closure_contents))
         class_args = fun_closure['class_args']
         assert not class_args, 'Class args are not supported, use kwargs instead'
         class_kwargs = fun_closure['class_kwargs']
