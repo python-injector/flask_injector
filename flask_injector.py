@@ -40,13 +40,42 @@ def wrap_fun(fun, injector):
 
         return wrapper
     elif hasattr(fun, 'view_class'):
-        current_class = fun.view_class
+        cls = fun.view_class
+        name = fun.__name__
 
-        def cls(**kwargs):
-            return injector.create_object(
-                current_class, additional_kwargs=kwargs)
+        closure_contents = (c.cell_contents for c in fun.func_closure)
+        fun_closure = dict(zip(fun.func_code.co_freevars, closure_contents))
+        class_args = fun_closure['class_args']
+        assert not class_args, 'Class args are not supported, use kwargs instead'
+        class_kwargs = fun_closure['class_kwargs']
 
-        fun.view_class = cls
+        # This section is flask.views.View.as_view code modified to make the injection
+        # possible without relying on modifying view function in place
+        # Copyright (c) 2014 by Armin Ronacher and Flask contributors, see Flask
+        # license for details
+
+        def view(*args, **kwargs):
+            self = injector.create_object(cls, additional_kwargs=class_kwargs)
+            return self.dispatch_request(*args, **kwargs)
+
+        if cls.decorators:
+            view.__name__ = name
+            view.__module__ = cls.__module__
+            for decorator in cls.decorators:
+                view = decorator(view)
+
+        # We attach the view class to the view function for two reasons:
+        # first of all it allows us to easily figure out what class-based
+        # view this thing came from, secondly it's also used for instantiating
+        # the view class so you can actually replace it with something else
+        # for testing purposes and debugging.
+        view.view_class = cls
+        view.__name__ = name
+        view.__doc__ = cls.__doc__
+        view.__module__ = cls.__module__
+        view.methods = cls.methods
+
+        fun = view
 
     return fun
 
