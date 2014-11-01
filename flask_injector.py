@@ -16,7 +16,7 @@ import flask
 from injector import Injector
 from flask import Config, Request
 from werkzeug.local import Local, LocalManager, LocalProxy
-from injector import Module, Provider, Scope, ScopeDecorator, singleton, InstanceProvider
+from injector import Module, Provider, Scope, ScopeDecorator, singleton
 
 
 __author__ = 'Alec Thomas <alec@swapoff.org>'
@@ -111,23 +111,12 @@ class RequestScope(Scope):
         self._local_manager = LocalManager([self._locals])
         self.reset()
 
-    try:
-        from injector import BoundProvider  # noqa
-    except ImportError:
-        def get(self, key, provider):
-            try:
-                return self._locals.scope[key]
-            except KeyError:
-                provider = InstanceProvider(provider.get())
-                self._locals.scope[key] = provider
-                return provider
-    else:
-        def get(self, key, provider):
-            try:
-                return self._locals.scope[key]
-            except KeyError:
-                new_provider = self._locals.scope[key] = CachedProviderWrapper(provider)
-                return new_provider
+    def get(self, key, provider):
+        try:
+            return self._locals.scope[key]
+        except KeyError:
+            new_provider = self._locals.scope[key] = CachedProviderWrapper(provider)
+            return new_provider
 
 
 request = ScopeDecorator(RequestScope)
