@@ -23,7 +23,7 @@ if __name__ == '__main__':
         py_modules=['flask_injector'],
         zip_safe=True,
         platforms='any',
-        install_requires=['Flask', 'injector>=0.7.4'],
+        install_requires=['Flask', 'injector>=0.9.0'],
         keywords=['Dependency Injection', 'Flask'],
         classifiers=[
             'Development Status :: 5 - Production/Stable',
