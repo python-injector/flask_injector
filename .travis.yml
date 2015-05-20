@@ -4,6 +4,7 @@ python:
   - "3.3"
   - "3.4"
   - "pypy"
+  - "pypy3"
 env:
   - INJECTOR_VERSION="==0.9.0"
   - INJECTOR_VERSION=""
