@@ -1,8 +1,8 @@
 Flask-Injector Changelog
 ========================
 
-Version 0.6.0 (unreleased yet)
-------------------------------
+Version 0.6.0
+-------------
 
 * Added support for injecting into Flask-RESTFul Resource constructors
 
