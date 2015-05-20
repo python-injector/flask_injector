@@ -1,6 +1,7 @@
 # encoding: utf-8
 #
 # Copyright (C) 2012 Alec Thomas <alec@swapoff.org>
+# Copyright (C) 2015 Smarkets Limited <support@smarkets.com>
 # All rights reserved.
 #
 # This software is licensed as described in the file COPYING, which
@@ -16,6 +17,7 @@ import flask
 from injector import Injector
 from flask import Config, Request
 from werkzeug.local import Local, LocalManager, LocalProxy
+from werkzeug.wrappers import Response
 from injector import Module, Provider, Scope, ScopeDecorator, singleton
 
 
@@ -45,9 +47,21 @@ def wrap_fun(fun, injector):
 
         closure_contents = (c.cell_contents for c in fun.__closure__)
         fun_closure = dict(zip(fun.__code__.co_freevars, closure_contents))
-        class_args = fun_closure['class_args']
-        assert not class_args, 'Class args are not supported, use kwargs instead'
-        class_kwargs = fun_closure['class_kwargs']
+        try:
+            class_kwargs = fun_closure['class_kwargs']
+        except KeyError:
+            # Most likely flask_restful resource, we'll see in a second
+            flask_restful = fun_closure['self']
+            # flask_restful wraps ResourceClass.as_view() result in its own wrapper
+            # the as_view() result is available under 'resource' name in this closure
+            fun = fun_closure['resource']
+            fun_closure = {}
+            class_kwargs = {}
+            # if the lines above succeeded we're quite sure it's flask_restful resource
+        else:
+            flask_restful = None
+            class_args = fun_closure['class_args']
+            assert not class_args, 'Class args are not supported, use kwargs instead'
 
         # This section is flask.views.View.as_view code modified to make the injection
         # possible without relying on modifying view function in place
@@ -76,6 +90,55 @@ def wrap_fun(fun, injector):
         view.methods = cls.methods
 
         fun = view
+
+        if flask_restful:
+            from flask_restful.utils import unpack
+
+            # The following fragment of code is copied from flask_restful project
+
+            """
+            Copyright (c) 2013, Twilio, Inc.
+            All rights reserved.
+
+            Redistribution and use in source and binary forms, with or without
+            modification, are permitted provided that the following conditions are met:
+
+            - Redistributions of source code must retain the above copyright notice, this
+              list of conditions and the following disclaimer.
+            - Redistributions in binary form must reproduce the above copyright notice,
+              this list of conditions and the following disclaimer in the documentation
+              and/or other materials provided with the distribution.
+            - Neither the name of the Twilio, Inc. nor the names of its contributors may be
+              used to endorse or promote products derived from this software without
+              specific prior written permission.
+
+            THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+            ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+            WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+            DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+            FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+            DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+            SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+            CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+            OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+            OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+            """
+
+            # we need separate variable for the closure to work correctly
+            # after we assign to fun below
+            original_fun = fun
+
+            @functools.wraps(original_fun)
+            def wrapper(*args, **kwargs):
+                resp = original_fun(*args, **kwargs)
+                if isinstance(resp, Response):  # There may be a better way to test
+                    return resp
+                data, code, headers = unpack(resp)
+                return flask_restful.make_response(data, code, headers=headers)
+
+            # end of flask_restful code
+
+            fun = wrapper
 
     return fun
 

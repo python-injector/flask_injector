@@ -9,7 +9,7 @@ env:
   - INJECTOR_VERSION="==0.9.0"
   - INJECTOR_VERSION=""
 install:
-  - pip install flake8 nose==1.3.0 flask==0.10.1 injector$INJECTOR_VERSION flask_cache flask_sqlalchemy
+  - pip install flake8 nose==1.3.0 flask==0.10.1 flask_restful injector$INJECTOR_VERSION flask_cache flask_sqlalchemy
 script:
   - flake8 --max-line-length=110 *.py
   - nosetests -v

@@ -1,5 +1,7 @@
+import json
 import warnings
 
+import flask_restful
 from injector import CallableProvider, inject
 from flask import Blueprint, Flask
 from flask.templating import render_template_string
@@ -225,3 +227,23 @@ def test_view_args_and_class_args_are_passed_to_class_based_views():
     response = client.get('/bbb')
     print(response.data)
     eq_(response.data, b'aaa bbb')
+
+
+def test_flask_restful_integration_works():
+
+    @inject(_int=int)
+    class HelloWorld(flask_restful.Resource):
+        def get(self):
+            return {'int': self._int}
+
+    app = Flask(__name__)
+    api = flask_restful.Api(app)
+
+    api.add_resource(HelloWorld, '/')
+
+    FlaskInjector(app=app)
+
+    client = app.test_client()
+    response = client.get('/')
+    data = json.loads(response.data.decode('utf-8'))
+    eq_(data, {'int': 0})
