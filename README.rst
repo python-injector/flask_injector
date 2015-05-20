@@ -32,6 +32,7 @@ Flask-Injector lets you inject dependencies into:
 * template context processors
 * error handlers
 * Jinja environment globals (functions in `app.jinja_env.globals`)
+* Flask-RESTFul Resource constructors
 
 
 Example application using Flask-Injector
