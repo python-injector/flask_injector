@@ -1,7 +1,9 @@
+import gc
 import json
 import warnings
 
 import flask_restful
+from eventlet import greenthread
 from injector import CallableProvider, inject
 from flask import Blueprint, Flask
 from flask.templating import render_template_string
@@ -86,7 +88,10 @@ def test_resets():
         def __init__(self, injector):
             pass
 
-        def reset(self):
+        def prepare(self):
+            pass
+
+        def cleanup(self):
             counter[0] += 1
 
     @app.route('/')
@@ -101,7 +106,36 @@ def test_resets():
     with app.test_client() as c:
         c.get('/')
 
-    eq_(counter[0], 2)
+    eq_(counter[0], 1)
+
+
+def test_memory_leak():
+    # The RequestScope holds references to GreenThread objects which would
+    # cause memory leak
+    app = Flask(__name__)
+
+    FlaskInjector(app)
+
+    @app.route('/')
+    def index():
+        return 'test'
+
+    def get_request():
+        with app.test_client() as c:
+            c.get('/')
+
+    green_thread = greenthread.spawn(get_request)
+    green_thread.wait()
+    # Delete green_thread so the GreenThread object is dereferenced
+    del green_thread
+    # Force run garbage collect to make sure GreenThread object is collected if
+    # there is no memory leak
+    gc.collect()
+    greenthread_count = len([
+        obj for obj in gc.get_objects()
+        if type(obj) is greenthread.GreenThread])
+
+    eq_(greenthread_count, 0)
 
 
 def test_doesnt_raise_deprecation_warning():
