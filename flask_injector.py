@@ -165,14 +165,15 @@ class RequestScope(Scope):
         pass
     """
 
-    def reset(self):
+    def cleanup(self):
         self._local_manager.cleanup()
+
+    def prepare(self):
         self._locals.scope = {}
 
     def configure(self):
         self._locals = Local()
         self._local_manager = LocalManager([self._locals])
-        self.reset()
 
     def get(self, key, provider):
         try:
@@ -220,11 +221,15 @@ class FlaskInjector(object):
 
         process_error_handler_spec(app.error_handler_spec, injector)
 
-        def reset_request_scope(*args, **kwargs):
-            injector.get(request_scope_class).reset()
+        def reset_request_scope_before(*args, **kwargs):
+            injector.get(request_scope_class).prepare()
 
-        app.before_request_funcs.setdefault(None, []).insert(0, reset_request_scope)
-        app.teardown_request(reset_request_scope)
+        def reset_request_scope_after(*args, **kwargs):
+            injector.get(request_scope_class).cleanup()
+
+        app.before_request_funcs.setdefault(
+            None, []).insert(0, reset_request_scope_before)
+        app.teardown_request(reset_request_scope_after)
 
         self.injector = injector
         self.app = app
