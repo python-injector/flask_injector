@@ -22,7 +22,7 @@ from injector import Module, Provider, Scope, ScopeDecorator, singleton
 
 
 __author__ = 'Alec Thomas <alec@swapoff.org>'
-__version__ = '0.6.1'
+__version__ = '0.6.2'
 __all__ = ['request', 'RequestScope', 'Config', 'Request', 'FlaskInjector', ]
 
 
@@ -174,6 +174,7 @@ class RequestScope(Scope):
     def configure(self):
         self._locals = Local()
         self._local_manager = LocalManager([self._locals])
+        self.prepare()
 
     def get(self, key, provider):
         try:

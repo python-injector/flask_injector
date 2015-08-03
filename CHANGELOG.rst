@@ -1,6 +1,14 @@
 Flask-Injector Changelog
 ========================
 
+Version 0.6.2
+-------------
+
+* Fixed a regression introduced in 0.6.1 (requesting an interface bound in
+  RequestScope outside request context got broken and would raise
+  "AttributeError: scope" exception. Even though it's not a documented
+  behaviour it's restored now so that backwards compatibility is preserved.
+
 Version 0.6.1
 -------------
 

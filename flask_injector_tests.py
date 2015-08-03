@@ -305,3 +305,20 @@ def test_flask_restful_integration_works():
     response = client.get('/')
     data = json.loads(response.data.decode('utf-8'))
     eq_(data, {'int': 0})
+
+
+def test_request_scope_not_started_before_any_request_made_regression():
+    # Version 0.6.1 (patch cacaef6 specifially) broke backwards compatibility in
+    # a relatively subtle way. The code used to support RequestScope even in
+    # the thread that originally created the Injector object. After cacaef6 an
+    # "AttributeError: scope" exception would be raised.
+    #
+    # For compatibility reason I'll restore the old behaviour, we can
+    # deprecate it later if needed
+
+    def configure(binder):
+        binder.bind(str, to='this is string', scope=request)
+
+    app = Flask(__name__)
+    flask_injector = FlaskInjector(app=app, modules=[configure])
+    eq_(flask_injector.injector.get(str), 'this is string')
