@@ -1,6 +1,19 @@
 Flask-Injector Changelog
 ========================
 
+Version 0.6.1
+-------------
+
+* Python 2.6 support dropped
+* Fixed a memory leak bug (a reference to thread-identity object would be kept
+  forever after a request would be served by particular thread; without greenlet
+  package installed thread ids (numeric values) are used so the internal
+  dictionary of thread local storage grows forever; when greenlet package is
+  installed greenlet objects are used as thread identities by Werkzeug so on top
+  of the internal storage growing infinitely all objects referenced by those
+  greenlet objects are kept alive; keywords: Eventlet, Gevent, GreenThread). See
+  GH issue #9 and pull request #11, thanks to Zi Li for the fix
+
 Version 0.6.0
 -------------
 

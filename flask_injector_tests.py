@@ -112,6 +112,30 @@ def test_resets():
 def test_memory_leak():
     # The RequestScope holds references to GreenThread objects which would
     # cause memory leak
+
+    # More explanation below
+    #
+    # In Werkzeug locals are indexed using values returned by ``get_ident`` function:
+    #
+    # try:
+    #    from greenlet import getcurrent as get_ident
+    # except ImportError:
+    #     try:
+    #         from thread import get_ident
+    #     except ImportError:
+    #         from _thread import get_ident
+    #
+    # This is what LocalManager.cleanup runs indirectly (__ident_func__
+    # points to get_ident unless it's overridden):
+    #
+    # self.__storage__.pop(self.__ident_func__(), None)
+
+    # If something's assigned in local storage *after* the cleanup is done an entry
+    # in internal storage under "the return value of get_ident()" key is recreated
+    # and a reference to the key will be kept forever.
+    #
+    # This is not strictly related to Eventlet/GreenThreads but that's how
+    # the issue manifested itself so the test reflects that.
     app = Flask(__name__)
 
     FlaskInjector(app)
