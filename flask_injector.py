@@ -22,7 +22,7 @@ from injector import Module, Provider, Scope, ScopeDecorator, singleton
 
 
 __author__ = 'Alec Thomas <alec@swapoff.org>'
-__version__ = '0.6.0'
+__version__ = '0.6.1'
 __all__ = ['request', 'RequestScope', 'Config', 'Request', 'FlaskInjector', ]
 
 
