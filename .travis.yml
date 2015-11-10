@@ -9,6 +9,12 @@ python:
   - "nightly"
   - "pypy"
   - "pypy3"
+matrix:
+  allow_failures:
+    - python: "nightly"
+      env: INJECTOR_VERSION="==0.9.0"
+    - python: "nightly"
+      env: INJECTOR_VERSION=""
 env:
   - INJECTOR_VERSION="==0.9.0"
   - INJECTOR_VERSION=""
