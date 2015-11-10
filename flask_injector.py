@@ -14,6 +14,10 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import functools
 
 import flask
+try:
+    import flask_restplus
+except ImportError:
+    flask_resplus = None
 from injector import Injector
 from flask import Config, Request
 from werkzeug.local import Local, LocalManager, LocalProxy
@@ -73,6 +77,16 @@ def wrap_class_based_view(fun, injector):
         flask_restful_api = None
         class_args = fun_closure['class_args']
         assert not class_args, 'Class args are not supported, use kwargs instead'
+
+    if (
+        flask_restful_api and
+        flask_restplus and
+        isinstance(flask_restful_api, flask_restplus.Api)
+    ):
+        if 'api' in class_kwargs:
+            raise AssertionError('api keyword argument is reserved')
+
+        class_kwargs['api'] = flask_restful_api
 
     # This section is flask.views.View.as_view code modified to make the injection
     # possible without relying on modifying view function in place
