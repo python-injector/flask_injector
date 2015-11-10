@@ -108,6 +108,11 @@ def wrap_class_based_view(fun, injector):
     return fun
 
 def wrap_flask_restful_resource(fun, flask_restful_api, injector):
+    """
+    This is needed because of how flask_restful views are registered originally.
+
+    :type flask_restful_api: :class:`flask_restful.Api`
+    """
     from flask_restful.utils import unpack
 
     # The following fragment of code is copied from flask_restful project
