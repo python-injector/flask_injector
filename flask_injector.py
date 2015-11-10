@@ -31,116 +31,126 @@ def wrap_fun(fun, injector):
         return fun
 
     if hasattr(fun, '__bindings__'):
-        @functools.wraps(fun)
-        def wrapper(*args, **kwargs):
-            injections = injector.args_to_inject(
-                function=fun,
-                bindings=fun.__bindings__,
-                owner_key=fun.__module__,
-            )
-            return fun(*args, **dict(injections, **kwargs))
+        return wrap_function(fun, injector)
 
-        return wrapper
-    elif hasattr(fun, 'view_class'):
-        cls = fun.view_class
-        name = fun.__name__
-
-        closure_contents = (c.cell_contents for c in fun.__closure__)
-        fun_closure = dict(zip(fun.__code__.co_freevars, closure_contents))
-        try:
-            class_kwargs = fun_closure['class_kwargs']
-        except KeyError:
-            # Most likely flask_restful resource, we'll see in a second
-            flask_restful = fun_closure['self']
-            # flask_restful wraps ResourceClass.as_view() result in its own wrapper
-            # the as_view() result is available under 'resource' name in this closure
-            fun = fun_closure['resource']
-            fun_closure = {}
-            class_kwargs = {}
-            # if the lines above succeeded we're quite sure it's flask_restful resource
-        else:
-            flask_restful = None
-            class_args = fun_closure['class_args']
-            assert not class_args, 'Class args are not supported, use kwargs instead'
-
-        # This section is flask.views.View.as_view code modified to make the injection
-        # possible without relying on modifying view function in place
-        # Copyright (c) 2014 by Armin Ronacher and Flask contributors, see Flask
-        # license for details
-
-        def view(*args, **kwargs):
-            self = injector.create_object(cls, additional_kwargs=class_kwargs)
-            return self.dispatch_request(*args, **kwargs)
-
-        if cls.decorators:
-            view.__name__ = name
-            view.__module__ = cls.__module__
-            for decorator in cls.decorators:
-                view = decorator(view)
-
-        # We attach the view class to the view function for two reasons:
-        # first of all it allows us to easily figure out what class-based
-        # view this thing came from, secondly it's also used for instantiating
-        # the view class so you can actually replace it with something else
-        # for testing purposes and debugging.
-        view.view_class = cls
-        view.__name__ = name
-        view.__doc__ = cls.__doc__
-        view.__module__ = cls.__module__
-        view.methods = cls.methods
-
-        fun = view
-
-        if flask_restful:
-            from flask_restful.utils import unpack
-
-            # The following fragment of code is copied from flask_restful project
-
-            """
-            Copyright (c) 2013, Twilio, Inc.
-            All rights reserved.
-
-            Redistribution and use in source and binary forms, with or without
-            modification, are permitted provided that the following conditions are met:
-
-            - Redistributions of source code must retain the above copyright notice, this
-              list of conditions and the following disclaimer.
-            - Redistributions in binary form must reproduce the above copyright notice,
-              this list of conditions and the following disclaimer in the documentation
-              and/or other materials provided with the distribution.
-            - Neither the name of the Twilio, Inc. nor the names of its contributors may be
-              used to endorse or promote products derived from this software without
-              specific prior written permission.
-
-            THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-            ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-            WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-            DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
-            FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-            DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-            SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-            CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-            OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-            OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-            """
-
-            # we need separate variable for the closure to work correctly
-            # after we assign to fun below
-            original_fun = fun
-
-            @functools.wraps(original_fun)
-            def wrapper(*args, **kwargs):
-                resp = original_fun(*args, **kwargs)
-                if isinstance(resp, Response):  # There may be a better way to test
-                    return resp
-                data, code, headers = unpack(resp)
-                return flask_restful.make_response(data, code, headers=headers)
-
-            # end of flask_restful code
-
-            fun = wrapper
+    if hasattr(fun, 'view_class'):
+        return wrap_class_based_view(fun, injector)
 
     return fun
+
+
+def wrap_function(fun, injector):
+    @functools.wraps(fun)
+    def wrapper(*args, **kwargs):
+        injections = injector.args_to_inject(
+            function=fun,
+            bindings=fun.__bindings__,
+            owner_key=fun.__module__,
+        )
+        return fun(*args, **dict(injections, **kwargs))
+
+    return wrapper
+
+
+def wrap_class_based_view(fun, injector):
+    cls = fun.view_class
+    name = fun.__name__
+
+    closure_contents = (c.cell_contents for c in fun.__closure__)
+    fun_closure = dict(zip(fun.__code__.co_freevars, closure_contents))
+    try:
+        class_kwargs = fun_closure['class_kwargs']
+    except KeyError:
+        # Most likely flask_restful resource, we'll see in a second
+        flask_restful_api = fun_closure['self']
+        # flask_restful wraps ResourceClass.as_view() result in its own wrapper
+        # the as_view() result is available under 'resource' name in this closure
+        fun = fun_closure['resource']
+        fun_closure = {}
+        class_kwargs = {}
+        # if the lines above succeeded we're quite sure it's flask_restful resource
+    else:
+        flask_restful_api = None
+        class_args = fun_closure['class_args']
+        assert not class_args, 'Class args are not supported, use kwargs instead'
+
+    # This section is flask.views.View.as_view code modified to make the injection
+    # possible without relying on modifying view function in place
+    # Copyright (c) 2014 by Armin Ronacher and Flask contributors, see Flask
+    # license for details
+
+    def view(*args, **kwargs):
+        self = injector.create_object(cls, additional_kwargs=class_kwargs)
+        return self.dispatch_request(*args, **kwargs)
+
+    if cls.decorators:
+        view.__name__ = name
+        view.__module__ = cls.__module__
+        for decorator in cls.decorators:
+            view = decorator(view)
+
+    # We attach the view class to the view function for two reasons:
+    # first of all it allows us to easily figure out what class-based
+    # view this thing came from, secondly it's also used for instantiating
+    # the view class so you can actually replace it with something else
+    # for testing purposes and debugging.
+    view.view_class = cls
+    view.__name__ = name
+    view.__doc__ = cls.__doc__
+    view.__module__ = cls.__module__
+    view.methods = cls.methods
+
+    fun = view
+
+    if flask_restful_api:
+        return wrap_flask_restful_resource(fun, flask_restful_api, injector)
+
+    return fun
+
+def wrap_flask_restful_resource(fun, flask_restful_api, injector):
+    from flask_restful.utils import unpack
+
+    # The following fragment of code is copied from flask_restful project
+
+    """
+    Copyright (c) 2013, Twilio, Inc.
+    All rights reserved.
+
+    Redistribution and use in source and binary forms, with or without
+    modification, are permitted provided that the following conditions are met:
+
+    - Redistributions of source code must retain the above copyright notice, this
+      list of conditions and the following disclaimer.
+    - Redistributions in binary form must reproduce the above copyright notice,
+      this list of conditions and the following disclaimer in the documentation
+      and/or other materials provided with the distribution.
+    - Neither the name of the Twilio, Inc. nor the names of its contributors may be
+      used to endorse or promote products derived from this software without
+      specific prior written permission.
+
+    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+    ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+    WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+    DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+    FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+    DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+    SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+    CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+    OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+    """
+
+    @functools.wraps(fun)
+    def wrapper(*args, **kwargs):
+        resp = fun(*args, **kwargs)
+        if isinstance(resp, Response):  # There may be a better way to test
+            return resp
+        data, code, headers = unpack(resp)
+        return flask_restful_api.make_response(data, code, headers=headers)
+
+    # end of flask_restful code
+
+    return wrapper
 
 
 class CachedProviderWrapper(Provider):
