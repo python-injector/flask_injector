@@ -83,6 +83,24 @@ def wrap_class_based_view(fun, injector):
         flask_restplus and
         isinstance(flask_restful_api, flask_restplus.Api)
     ):
+        # This is flask_restplus' add_resource implementation:
+        #
+        #     def add_resource(self, resource, *urls, **kwargs):
+        #     (...)
+        #     args = kwargs.pop('resource_class_args', [])
+        #     if isinstance(args, tuple):
+        #         args = list(args)
+        #     args.insert(0, self)
+        #     kwargs['resource_class_args'] = args
+        #
+        #     super(Api, self).add_resource(resource, *urls, **kwargs)
+        #
+        # Correspondingly, flask_restplus.Resource's constructor expects
+        # flask_restplus.Api instance in its first argument; since we detected
+        # that we're very likely dealing with flask_restplus we'll provide the Api
+        # instance as keyword argument instead (it'll work just as well unless
+        # flask_restplus changes the name of the parameter; also
+        # Injector.create_object doesn't support extra positional arguments anyway).
         if 'api' in class_kwargs:
             raise AssertionError('api keyword argument is reserved')
 

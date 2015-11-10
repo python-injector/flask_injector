@@ -3,6 +3,7 @@ import json
 import warnings
 
 import flask_restful
+import flask_restplus
 from eventlet import greenthread
 from injector import CallableProvider, inject
 from flask import Blueprint, Flask
@@ -303,6 +304,25 @@ def test_flask_restful_integration_works():
 
     client = app.test_client()
     response = client.get('/')
+    data = json.loads(response.data.decode('utf-8'))
+    eq_(data, {'int': 0})
+
+
+def test_flask_restplus_integration_works():
+    @inject(_int=int)
+    class HelloWorld(flask_restplus.Resource):
+        def get(self):
+            return {'int': self._int}
+
+    app = Flask(__name__)
+    api = flask_restplus.Api(app)
+
+    api.add_resource(HelloWorld, '/hello')
+
+    FlaskInjector(app=app)
+
+    client = app.test_client()
+    response = client.get('/hello')
     data = json.loads(response.data.decode('utf-8'))
     eq_(data, {'int': 0})
 
