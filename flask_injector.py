@@ -75,7 +75,7 @@ def wrap_class_based_view(fun, injector):
         # if the lines above succeeded we're quite sure it's flask_restful resource
     else:
         flask_restful_api = None
-        class_args = fun_closure['class_args']
+        class_args = fun_closure.get('class_args')
         assert not class_args, 'Class args are not supported, use kwargs instead'
 
     if (
