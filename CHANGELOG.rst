@@ -1,8 +1,8 @@
 Flask-Injector Changelog
 ========================
 
-Version 0.7.0 (not released yet)
---------------------------------
+Version 0.7.0
+-------------
 
 * Added support for injecting into Flask-RestPlus Resource constructors
 * Added support for dependencies declared using Python 3-style annotations
