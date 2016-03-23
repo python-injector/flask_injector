@@ -35,6 +35,8 @@ Flask-Injector lets you inject dependencies into:
 * Flask-RESTFul Resource constructors
 * Flask-RestPlus Resource constructors
 
+Flask-Injector supports defining types using function annotations (Python 3),
+see below.
 
 Example application using Flask-Injector
 ----------------------------------------
@@ -143,3 +145,33 @@ of `injector.Module` or a callable taking an `injector.Binder` instance.
         app.run()
 
 *Make sure to bind extension objects as singletons.*
+
+
+Using Python 3+ function annotations
+------------------------------------
+
+If you want to use function annotations you can either pass
+``use_annotations=True`` in the ``FlaskInjector`` constructor or provide an
+already configured ``Injector`` instance with ``use_annotations`` enabled,
+for example:
+
+.. code:: python
+
+    from flask import Flask
+    from flask_injector import FlaskInjector
+
+    app = Flask(__name__)
+
+    @app.route("/")
+    def index(s: str):
+        return s
+
+    def configure(binder):
+        binder.bind(str, to='this is a test')
+
+    FlaskInjector(app=app, modules=[configure], use_annotations=True)
+
+    # Alternatively:
+    from injector import Injector
+    injector = Injector(..., use_annotations=True)
+    FlaskInjector(app=app, injector=injector)

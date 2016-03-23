@@ -18,7 +18,7 @@ try:
     import flask_restplus
 except ImportError:
     flask_resplus = None
-from injector import Injector
+from injector import Injector, inject
 from flask import Config, Request
 from werkzeug.local import Local, LocalManager, LocalProxy
 from werkzeug.wrappers import Response
@@ -34,8 +34,15 @@ def wrap_fun(fun, injector):
     if isinstance(fun, LocalProxy):
         return fun
 
+    # Important: this block needs to stay here so it's executed *before* the
+    # hasattr(fun, '__call__') block below - otherwise things may crash.
     if hasattr(fun, '__bindings__'):
         return wrap_function(fun, injector)
+
+    if hasattr(fun, '__call__') and not isinstance(fun, type):
+        bindings_from_annotations = injector._infer_injected_bindings(fun)
+        if bindings_from_annotations:
+            return wrap_fun(inject(**bindings_from_annotations)(fun), injector)
 
     if hasattr(fun, 'view_class'):
         return wrap_class_based_view(fun, injector)
@@ -236,7 +243,14 @@ request = ScopeDecorator(RequestScope)
 
 
 class FlaskInjector(object):
-    def __init__(self, app, modules=[], injector=None, request_scope_class=RequestScope):
+    def __init__(
+        self,
+        app,
+        modules=[],
+        injector=None,
+        request_scope_class=RequestScope,
+        use_annotations=None,
+    ):
         """Initializes Injector for the application.
 
         .. note::
@@ -250,9 +264,22 @@ class FlaskInjector(object):
             a new instance will be created.
         :type app: :class:`flask.Flask`
         :type modules: Iterable of configuration modules
+        :param use_annotations: Enables Python 3 annotation support, see Injector
+                                documentation for details.
+        :type use_annotations: bool
         :rtype: :class:`injector.Injector`
         """
-        injector = injector or Injector()
+        if injector and use_annotations is not None:
+            raise AssertionError(
+                'You cannot set use_annotations and pass Injector instance '
+                'at the same time',
+            )
+        if not injector:
+            kwargs = {}
+            if use_annotations is not None:
+                kwargs['use_annotations'] = use_annotations
+            injector = Injector(**kwargs)
+
         for module in (
                 [FlaskModule(app=app, request_scope_class=request_scope_class)] +
                 list(modules)):

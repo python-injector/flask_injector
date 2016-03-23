@@ -5,6 +5,7 @@ Version 0.7.0 (not released yet)
 --------------------------------
 
 * Added support for injecting into Flask-RestPlus Resource constructors
+* Added support for dependencies declared using Python 3-style annotations
 
 Version 0.6.2
 -------------
