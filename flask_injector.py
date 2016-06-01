@@ -326,7 +326,16 @@ def process_error_handler_spec(spec, injector):
         except KeyError:
             pass
         else:
-            custom_handlers[:] = [(error, wrap_fun(fun, injector)) for (error, fun) in custom_handlers]
+            if isinstance(custom_handlers, list):  # Flask < 0.11
+                custom_handlers[:] = [
+                    (error, wrap_fun(fun, injector))
+                    for (error, fun) in custom_handlers
+                ]
+            else:
+                custom_handlers = {
+                    error:  wrap_fun(fun, injector)
+                    for error, fun in custom_handlers.items()
+                }
 
         process_dict(subspec, injector)
 
