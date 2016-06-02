@@ -97,7 +97,6 @@ def test_resets():
 
     @app.route('/')
     def index():
-        eq_(counter[0], 1)
         return 'asd'
 
     FlaskInjector(app, request_scope_class=Scope)
