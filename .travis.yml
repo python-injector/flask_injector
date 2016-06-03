@@ -12,13 +12,19 @@ python:
 matrix:
   allow_failures:
     - python: "nightly"
-      env: INJECTOR_VERSION="==0.9.0"
+      env: INJECTOR_VERSION="==0.9.0" FLASK_VERSION="==0.10"
     - python: "nightly"
-      env: INJECTOR_VERSION=""
+      env: INJECTOR_VERSION="==0.9.0" FLASK_VERSION="==0.11"
+    - python: "nightly"
+      env: INJECTOR_VERSION="" FLASK_VERSION="==0.10"
+    - python: "nightly"
+      env: INJECTOR_VERSION="" FLASK_VERSION="==0.11"
 env:
-  - INJECTOR_VERSION="==0.9.0"
-  - INJECTOR_VERSION=""
+  - INJECTOR_VERSION="==0.9.0" FLASK_VERSION="==0.10"
+  - INJECTOR_VERSION="==0.9.0" FLASK_VERSION="==0.11"
+  - INJECTOR_VERSION="" FLASK_VERSION="==0.10"
+  - INJECTOR_VERSION="" FLASK_VERSION="==0.11"
 install:
-  - pip install flake8 nose==1.3.0 flask==0.10.1 flask_restful flask_restplus injector$INJECTOR_VERSION flask_cache flask_sqlalchemy eventlet
+  - pip install flake8 nose==1.3.0 flask$FLASK_VERSION flask_restful flask_restplus injector$INJECTOR_VERSION flask_cache flask_sqlalchemy eventlet
 script:
   - make test
