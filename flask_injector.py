@@ -317,6 +317,8 @@ def process_dict(d, injector):
             value[:] = [wrap_fun(fun, injector) for fun in value]
         elif hasattr(value, '__call__'):
             d[key] = wrap_fun(value, injector)
+        elif isinstance(value, dict):
+            process_dict(value, injector)
 
 
 def process_error_handler_spec(spec, injector):
@@ -326,16 +328,13 @@ def process_error_handler_spec(spec, injector):
         except KeyError:
             pass
         else:
-            if isinstance(custom_handlers, list):  # Flask < 0.11
+            # This is to handle Flask < 0.11, newer Flask versions are handled
+            # by process_dict call below
+            if isinstance(custom_handlers, list):
                 custom_handlers[:] = [
                     (error, wrap_fun(fun, injector))
                     for (error, fun) in custom_handlers
                 ]
-            else:
-                custom_handlers = {
-                    error:  wrap_fun(fun, injector)
-                    for error, fun in custom_handlers.items()
-                }
 
         process_dict(subspec, injector)
 
