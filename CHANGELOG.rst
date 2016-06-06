@@ -1,6 +1,11 @@
 Flask-Injector Changelog
 ========================
 
+Version 0.7.1
+-------------
+
+* Fixed Flask 0.11 compatibility, thanks to Philip Jones for the initial patch
+
 Version 0.7.0
 -------------
 
