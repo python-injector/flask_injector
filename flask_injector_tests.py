@@ -5,7 +5,7 @@ import warnings
 import flask_restful
 import flask_restplus
 from eventlet import greenthread
-from injector import CallableProvider, inject
+from injector import CallableProvider
 from flask import Blueprint, Flask
 from flask.templating import render_template_string
 from flask.views import View
@@ -28,46 +28,44 @@ def test_injections():
     app = Flask(__name__)
 
     @app.route('/view1')
-    @inject(content=str)
-    def view1(content):
+    def view1(content: str):
         inc()
         return render_template_string(content)
 
-    @inject(content=list)
     class View2(View):
+        def __init__(self, *args, content: list, **kwargs):
+            self.content = content
+            super().__init__(*args, **kwargs)
+
         def dispatch_request(self):
             inc()
             return render_template_string('%s' % self.content)
 
     @app.before_request
-    @inject(c=list)
-    def br(c):
+    def br(c: list):
         inc()
         eq_(c, l)
 
     @app.after_request
-    @inject(c=list)
-    def ar(response_class, c):
+    def ar(response_class, c: list):
         inc()
         eq_(c, l)
         return response_class
 
     @app.context_processor
-    @inject(c=list)
-    def cp(c):
+    def cp(c: list):
         inc()
         eq_(c, l)
         return {}
 
     @app.teardown_request
-    @inject(c=list)
-    def tr(sender, exc=None, c=None):
+    def tr(sender, exc=None, c: list = None):
         inc()
         eq_(c, l)
 
     app.add_url_rule('/view2', view_func=View2.as_view('view2'))
 
-    FlaskInjector(app=app, modules=[conf])
+    FlaskInjector(app=app, modules=[conf], use_annotations=True)
 
     with app.test_client() as c:
         response = c.get('/view1')
@@ -172,11 +170,10 @@ def test_doesnt_raise_deprecation_warning():
         binder.bind(str, to=CallableProvider(provide_str), scope=request)
 
     @app.route('/')
-    @inject(s=str)
-    def index(s):
+    def index(s: str):
         return s
 
-    FlaskInjector(app=app, modules=[configure])
+    FlaskInjector(app=app, modules=[configure], use_annotations=True)
 
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always")
@@ -191,8 +188,7 @@ def test_jinja_env_globals_support_injection():
     def configure(binder):
         binder.bind(str, to='xyz')
 
-    @inject(s=str)
-    def do_something_helper(s):
+    def do_something_helper(s: str):
         return s
 
     app.jinja_env.globals['do_something'] = do_something_helper
@@ -201,7 +197,7 @@ def test_jinja_env_globals_support_injection():
     def index():
         return render_template_string('{{ do_something() }}')
 
-    FlaskInjector(app=app, modules=[configure])
+    FlaskInjector(app=app, modules=[configure], use_annotations=True)
 
     with app.test_client() as c:
         eq_(c.get('/').get_data(as_text=True), 'xyz')
@@ -218,19 +214,17 @@ def test_error_handlers_support_injection():
         raise CustomException()
 
     @app.errorhandler(404)
-    @inject(s=str)
-    def handle_404(error, s):
+    def handle_404(error, s: str):
         return s, 404
 
     @app.errorhandler(CustomException)
-    @inject(s=str)
-    def handle_custom_exception(error, s):
+    def handle_custom_exception(error, s: str):
         return s, 500
 
     def configure(binder):
         binder.bind(str, to='injected content')
 
-    FlaskInjector(app=app, modules=[configure])
+    FlaskInjector(app=app, modules=[configure], use_annotations=True)
 
     with app.test_client() as c:
         response = c.get('/this-page-does-not-exist')
@@ -289,8 +283,11 @@ def test_view_args_and_class_args_are_passed_to_class_based_views():
 
 def test_flask_restful_integration_works():
 
-    @inject(_int=int)
     class HelloWorld(flask_restful.Resource):
+        def __init__(self, *args, int: int, **kwargs):
+            self._int = int
+            super().__init__(*args, **kwargs)
+
         def get(self):
             return {'int': self._int}
 
@@ -299,7 +296,7 @@ def test_flask_restful_integration_works():
 
     api.add_resource(HelloWorld, '/')
 
-    FlaskInjector(app=app)
+    FlaskInjector(app=app, use_annotations=True)
 
     client = app.test_client()
     response = client.get('/')
@@ -308,8 +305,11 @@ def test_flask_restful_integration_works():
 
 
 def test_flask_restplus_integration_works():
-    @inject(_int=int)
     class HelloWorld(flask_restplus.Resource):
+        def __init__(self, *args, int: int, **kwargs):
+            self._int = int
+            super().__init__(*args, **kwargs)
+
         def get(self):
             return {'int': self._int}
 
@@ -318,7 +318,7 @@ def test_flask_restplus_integration_works():
 
     api.add_resource(HelloWorld, '/hello')
 
-    FlaskInjector(app=app)
+    FlaskInjector(app=app, use_annotations=True)
 
     client = app.test_client()
     response = client.get('/hello')

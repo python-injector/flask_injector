@@ -8,9 +8,6 @@
 # you should have received as part of this distribution.
 #
 # Author: Alec Thomas <alec@swapoff.org>
-
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 import functools
 
 import flask
@@ -216,7 +213,7 @@ class RequestScope(Scope):
     """A scope whose object lifetime is tied to a request.
 
     @request
-    class Session(object):
+    class Session:
         pass
     """
 
@@ -242,7 +239,7 @@ class RequestScope(Scope):
 request = ScopeDecorator(RequestScope)
 
 
-class FlaskInjector(object):
+class FlaskInjector:
     def __init__(
         self,
         app,
@@ -292,10 +289,9 @@ class FlaskInjector(object):
                 app.teardown_request_funcs,
                 app.template_context_processors,
                 app.jinja_env.globals,
+                app.error_handler_spec,
         ):
             process_dict(container, injector)
-
-        process_error_handler_spec(app.error_handler_spec, injector)
 
         def reset_request_scope_before(*args, **kwargs):
             injector.get(request_scope_class).prepare()
@@ -319,24 +315,6 @@ def process_dict(d, injector):
             d[key] = wrap_fun(value, injector)
         elif isinstance(value, dict):
             process_dict(value, injector)
-
-
-def process_error_handler_spec(spec, injector):
-    for subspec in spec.values():
-        try:
-            custom_handlers = subspec[None]
-        except KeyError:
-            pass
-        else:
-            # This is to handle Flask < 0.11, newer Flask versions are handled
-            # by process_dict call below
-            if isinstance(custom_handlers, list):
-                custom_handlers[:] = [
-                    (error, wrap_fun(fun, injector))
-                    for (error, fun) in custom_handlers
-                ]
-
-        process_dict(subspec, injector)
 
 
 class FlaskModule(Module):
