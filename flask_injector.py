@@ -21,6 +21,15 @@ from werkzeug.local import Local, LocalManager, LocalProxy
 from werkzeug.wrappers import Response
 from injector import Module, Provider, Scope, ScopeDecorator, singleton
 
+try:
+    from injector import _infer_injected_bindings
+except ImportError:
+    def _infer_bindings(injector, function):
+        return injector._infer_injected_bindings(function)
+else:
+    def _infer_bindings(injector, function):
+        return _infer_injected_bindings(function)
+
 
 __author__ = 'Alec Thomas <alec@swapoff.org>'
 __version__ = '0.7.1'
@@ -37,7 +46,7 @@ def wrap_fun(fun, injector):
         return wrap_function(fun, injector)
 
     if hasattr(fun, '__call__') and not isinstance(fun, type):
-        bindings_from_annotations = injector._infer_injected_bindings(fun)
+        bindings_from_annotations = _infer_bindings(injector, fun)
         if bindings_from_annotations:
             return wrap_fun(inject(**bindings_from_annotations)(fun), injector)
 
