@@ -9,6 +9,7 @@
 #
 # Author: Alec Thomas <alec@swapoff.org>
 import functools
+from typing import get_type_hints
 
 import flask
 try:
@@ -46,6 +47,14 @@ def wrap_fun(fun, injector):
         return wrap_function(fun, injector)
 
     if hasattr(fun, '__call__') and not isinstance(fun, type):
+        try:
+            get_type_hints(fun)
+        except AttributeError:
+            # Some callables aren't introspectable with get_type_hints,
+            # let's assume they don't have anything to inject. The exception
+            # type handled here is AttributeError because that's what
+            # I encountered so far.
+            return fun
         bindings_from_annotations = _infer_bindings(injector, fun)
         if bindings_from_annotations:
             return wrap_fun(inject(**bindings_from_annotations)(fun), injector)

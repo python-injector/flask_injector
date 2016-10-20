@@ -1,6 +1,7 @@
 import gc
 import json
 import warnings
+from functools import partial
 
 import flask_restful
 import flask_restplus
@@ -341,3 +342,15 @@ def test_request_scope_not_started_before_any_request_made_regression():
     app = Flask(__name__)
     flask_injector = FlaskInjector(app=app, modules=[configure])
     eq_(flask_injector.injector.get(str), 'this is string')
+
+
+def test_noninstrospectable_hooks_dont_crash_everything():
+    app = Flask(__name__)
+
+    def do_nothing():
+        pass
+
+    app.before_request(partial(do_nothing))
+
+    # It'd crash here
+    FlaskInjector(app=app)
