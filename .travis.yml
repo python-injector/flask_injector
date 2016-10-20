@@ -8,6 +8,10 @@ python:
   - "nightly"
 matrix:
   allow_failures:
+    - python: "3.5-dev"
+      env: INJECTOR_VERSION=">=0.10,<0.11" FLASK_VERSION="==0.11"
+    - python: "3.5-dev"
+      env: INJECTOR_VERSION=">=0.11" FLASK_VERSION="==0.11"
     - python: "nightly"
       env: INJECTOR_VERSION=">=0.10,<0.11" FLASK_VERSION="==0.11"
     - python: "nightly"
