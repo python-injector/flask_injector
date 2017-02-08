@@ -15,7 +15,7 @@ import flask
 try:
     import flask_restplus
 except ImportError:
-    flask_resplus = None
+    flask_restplus = None
 from injector import Injector, inject
 from flask import Config, Request
 from werkzeug.local import Local, LocalManager, LocalProxy
