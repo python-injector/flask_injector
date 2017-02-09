@@ -9,9 +9,6 @@ python:
 matrix:
   allow_failures:
     - python: "nightly"
-      env: INJECTOR_VERSION=">=0.10,<0.11" FLASK_VERSION="==0.11"
-    - python: "nightly"
-      env: INJECTOR_VERSION=">=0.11" FLASK_VERSION="==0.11"
 env:
   - INJECTOR_VERSION=">=0.10,<0.11" FLASK_VERSION="==0.11"
   - INJECTOR_VERSION=">=0.11" FLASK_VERSION="==0.11"
