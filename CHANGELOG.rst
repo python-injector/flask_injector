@@ -8,6 +8,10 @@ Version 0.8.1 (not released yet)
   was registered as, for example, before_request hook
 * Fixed support for forward references in type hints
 
+Backwards incompatible:
+
+* Dropped support for Injector 0.10
+
 Version 0.8.0
 -------------
 
