@@ -1,8 +1,8 @@
 Flask-Injector Changelog
 ========================
 
-Version 0.8.1 (not released yet)
---------------------------------
+Version 0.9.0
+-------------
 
 * Fixed a bug that would cause a crash when an nonintrospectable callable
   was registered as, for example, before_request hook
