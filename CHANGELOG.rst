@@ -7,6 +7,7 @@ Version 0.8.1 (not released yet)
 * Fixed a bug that would cause a crash when an nonintrospectable callable
   was registered as, for example, before_request hook
 * Fixed support for forward references in type hints
+* Added type hints to the codebase
 
 Backwards incompatible:
 

@@ -9,14 +9,14 @@
 #
 # Author: Alec Thomas <alec@swapoff.org>
 import functools
-from typing import get_type_hints
+from typing import Any, Callable, cast, Dict, get_type_hints, Iterable, Union
 
 import flask
 try:
     import flask_restplus
 except ImportError:
     flask_restplus = None
-from injector import Injector, inject
+from injector import Binder, Injector, inject
 from flask import Config, Request
 from werkzeug.local import Local, LocalManager, LocalProxy
 from werkzeug.wrappers import Response
@@ -28,7 +28,7 @@ __version__ = '0.8.0'
 __all__ = ['request', 'RequestScope', 'Config', 'Request', 'FlaskInjector', ]
 
 
-def wrap_fun(fun, injector):
+def wrap_fun(fun: Callable, injector: Injector) -> Callable:
     if isinstance(fun, LocalProxy):
         return fun
 
@@ -61,18 +61,18 @@ def wrap_fun(fun, injector):
     return fun
 
 
-def wrap_function(fun, injector):
+def wrap_function(fun: Callable, injector: Injector):
     @functools.wraps(fun)
-    def wrapper(*args, **kwargs):
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
         return injector.call_with_injection(callable=fun, args=args, kwargs=kwargs)
     return wrapper
 
 
-def wrap_class_based_view(fun, injector):
-    cls = fun.view_class
+def wrap_class_based_view(fun: Callable, injector: Injector) -> Callable:
+    cls = cast(Any, fun).view_class
     name = fun.__name__
 
-    closure_contents = (c.cell_contents for c in fun.__closure__)
+    closure_contents = (c.cell_contents for c in cast(Any, fun).__closure__)
     fun_closure = dict(zip(fun.__code__.co_freevars, closure_contents))
     try:
         class_kwargs = fun_closure['class_kwargs']
@@ -123,7 +123,7 @@ def wrap_class_based_view(fun, injector):
     # Copyright (c) 2014 by Armin Ronacher and Flask contributors, see Flask
     # license for details
 
-    def view(*args, **kwargs):
+    def view(*args: Any, **kwargs: Any) -> Any:
         self = injector.create_object(cls, additional_kwargs=class_kwargs)
         return self.dispatch_request(*args, **kwargs)
 
@@ -138,11 +138,11 @@ def wrap_class_based_view(fun, injector):
     # view this thing came from, secondly it's also used for instantiating
     # the view class so you can actually replace it with something else
     # for testing purposes and debugging.
-    view.view_class = cls
+    cast(Any, view).view_class = cls
     view.__name__ = name
     view.__doc__ = cls.__doc__
     view.__module__ = cls.__module__
-    view.methods = cls.methods
+    cast(Any, view).methods = cls.methods
 
     fun = view
 
@@ -152,7 +152,7 @@ def wrap_class_based_view(fun, injector):
     return fun
 
 
-def wrap_flask_restful_resource(fun, flask_restful_api, injector):
+def wrap_flask_restful_resource(fun: Callable, flask_restful_api, injector: Injector) -> Callable:
     """
     This is needed because of how flask_restful views are registered originally.
 
@@ -191,7 +191,7 @@ def wrap_flask_restful_resource(fun, flask_restful_api, injector):
     """
 
     @functools.wraps(fun)
-    def wrapper(*args, **kwargs):
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
         resp = fun(*args, **kwargs)
         if isinstance(resp, Response):  # There may be a better way to test
             return resp
@@ -204,11 +204,11 @@ def wrap_flask_restful_resource(fun, flask_restful_api, injector):
 
 
 class CachedProviderWrapper(Provider):
-    def __init__(self, old_provider):
+    def __init__(self, old_provider: Provider) -> None:
         self._old_provider = old_provider
-        self._cache = {}
+        self._cache = {}  # type: Dict[int, Any]
 
-    def get(self, injector):
+    def get(self, injector: Injector) -> Any:
         key = id(injector)
         try:
             return self._cache[key]
@@ -225,18 +225,23 @@ class RequestScope(Scope):
         pass
     """
 
-    def cleanup(self):
+    # We don't want to assign here, just provide type hints
+    if False:
+        _local_manager = None  # type: LocalManager
+        _locals = None  # type: Local
+
+    def cleanup(self) -> None:
         self._local_manager.cleanup()
 
-    def prepare(self):
+    def prepare(self) -> None:
         self._locals.scope = {}
 
-    def configure(self):
+    def configure(self) -> None:
         self._locals = Local()
         self._local_manager = LocalManager([self._locals])
         self.prepare()
 
-    def get(self, key, provider):
+    def get(self, key: Any, provider: Provider) -> Any:
         try:
             return self._locals.scope[key]
         except KeyError:
@@ -247,15 +252,18 @@ class RequestScope(Scope):
 request = ScopeDecorator(RequestScope)
 
 
+_ModuleT = Union[Callable[[Binder], Any], Module]
+
+
 class FlaskInjector:
     def __init__(
         self,
-        app,
-        modules=[],
-        injector=None,
-        request_scope_class=RequestScope,
-        use_annotations=None,
-    ):
+        app: flask.Flask,
+        modules: Iterable[_ModuleT] = [],
+        injector: Injector = None,
+        request_scope_class: type = RequestScope,
+        use_annotations: bool = None,
+    ) -> None:
         """Initializes Injector for the application.
 
         .. note::
@@ -285,9 +293,9 @@ class FlaskInjector:
                 kwargs['use_annotations'] = use_annotations
             injector = Injector(**kwargs)
 
-        for module in (
-                [FlaskModule(app=app, request_scope_class=request_scope_class)] +
-                list(modules)):
+        modules = list(modules)
+        modules.insert(0, FlaskModule(app=app, request_scope_class=request_scope_class))
+        for module in modules:
             injector.binder.install(module)
 
         for container in (
@@ -301,10 +309,10 @@ class FlaskInjector:
         ):
             process_dict(container, injector)
 
-        def reset_request_scope_before(*args, **kwargs):
+        def reset_request_scope_before(*args: Any, **kwargs: Any) -> None:
             injector.get(request_scope_class).prepare()
 
-        def reset_request_scope_after(*args, **kwargs):
+        def reset_request_scope_after(*args: Any, **kwargs: Any) -> None:
             injector.get(request_scope_class).cleanup()
 
         app.before_request_funcs.setdefault(
@@ -315,7 +323,7 @@ class FlaskInjector:
         self.app = app
 
 
-def process_dict(d, injector):
+def process_dict(d: Dict, injector: Injector) -> None:
     for key, value in d.items():
         if isinstance(value, list):
             value[:] = [wrap_fun(fun, injector) for fun in value]
@@ -326,11 +334,11 @@ def process_dict(d, injector):
 
 
 class FlaskModule(Module):
-    def __init__(self, app, request_scope_class=RequestScope):
+    def __init__(self, app: flask.Flask, request_scope_class: type = RequestScope) -> None:
         self.app = app
         self.request_scope_class = request_scope_class
 
-    def configure(self, binder):
+    def configure(self, binder: Binder) -> None:
         binder.bind_scope(self.request_scope_class)
         binder.bind(flask.Flask, to=self.app, scope=singleton)
         binder.bind(Config, to=self.app.config, scope=singleton)
