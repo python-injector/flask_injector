@@ -6,7 +6,7 @@ from functools import partial
 import flask_restful
 import flask_restplus
 from eventlet import greenthread
-from injector import CallableProvider
+from injector import __version__ as injector_version, CallableProvider
 from flask import Blueprint, Flask
 from flask.templating import render_template_string
 from flask.views import View
@@ -354,3 +354,30 @@ def test_noninstrospectable_hooks_dont_crash_everything():
 
     # It'd crash here
     FlaskInjector(app=app)
+
+
+if injector_version >= '0.12':
+    def test_forward_references_work():
+        app = Flask(__name__)
+
+        @app.route('/')
+        def index(x: 'X'):
+            return x.message
+
+        FlaskInjector(app=app, use_annotations=True)
+
+        # The class needs to be module-global in order for the string -> object
+        # resolution mechanism to work. I could make it work with locals but it
+        # doesn't seem worth it.
+        global X
+
+        class X:
+            def __init__(self) -> None:
+                self.message = 'Hello World'
+
+        try:
+            client = app.test_client()
+            response = client.get('/')
+            eq_(response.data.decode(), 'Hello World')
+        finally:
+            del X

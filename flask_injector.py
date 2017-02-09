@@ -22,15 +22,6 @@ from werkzeug.local import Local, LocalManager, LocalProxy
 from werkzeug.wrappers import Response
 from injector import Module, Provider, Scope, ScopeDecorator, singleton
 
-try:
-    from injector import _infer_injected_bindings
-except ImportError:
-    def _infer_bindings(injector, function):
-        return injector._infer_injected_bindings(function)
-else:
-    def _infer_bindings(injector, function):
-        return _infer_injected_bindings(function)
-
 
 __author__ = 'Alec Thomas <alec@swapoff.org>'
 __version__ = '0.8.0'
@@ -48,17 +39,21 @@ def wrap_fun(fun, injector):
 
     if hasattr(fun, '__call__') and not isinstance(fun, type):
         try:
-            get_type_hints(fun)
+            type_hints = get_type_hints(fun)
         except (AttributeError, TypeError):
             # Some callables aren't introspectable with get_type_hints,
             # let's assume they don't have anything to inject. The exception
             # types handled here are what I encountered so far.
             # It used to be AttributeError, then https://github.com/python/typing/pull/314
             # changed it to TypeError.
-            return fun
-        bindings_from_annotations = _infer_bindings(injector, fun)
-        if bindings_from_annotations:
-            return wrap_fun(inject(**bindings_from_annotations)(fun), injector)
+            wrap_it = False
+        except NameError:
+            wrap_it = True
+        else:
+            type_hints.pop('return', None)
+            wrap_it = type_hints != {}
+        if wrap_it:
+            return wrap_fun(inject(fun), injector)
 
     if hasattr(fun, 'view_class'):
         return wrap_class_based_view(fun, injector)
