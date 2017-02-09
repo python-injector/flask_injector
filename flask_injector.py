@@ -49,11 +49,12 @@ def wrap_fun(fun, injector):
     if hasattr(fun, '__call__') and not isinstance(fun, type):
         try:
             get_type_hints(fun)
-        except AttributeError:
+        except (AttributeError, TypeError):
             # Some callables aren't introspectable with get_type_hints,
             # let's assume they don't have anything to inject. The exception
-            # type handled here is AttributeError because that's what
-            # I encountered so far.
+            # types handled here are what I encountered so far.
+            # It used to be AttributeError, then https://github.com/python/typing/pull/314
+            # changed it to TypeError.
             return fun
         bindings_from_annotations = _infer_bindings(injector, fun)
         if bindings_from_annotations:
