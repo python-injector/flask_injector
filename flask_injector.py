@@ -69,13 +69,7 @@ def wrap_fun(fun, injector):
 def wrap_function(fun, injector):
     @functools.wraps(fun)
     def wrapper(*args, **kwargs):
-        injections = injector.args_to_inject(
-            function=fun,
-            bindings=fun.__bindings__,
-            owner_key=fun.__module__,
-        )
-        return fun(*args, **dict(injections, **kwargs))
-
+        return injector.call_with_injection(callable=fun, args=args, kwargs=kwargs)
     return wrapper
 
 
