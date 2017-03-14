@@ -9,9 +9,13 @@
 #
 # Author: Alec Thomas <alec@swapoff.org>
 import functools
-from typing import Any, Callable, cast, Dict, get_type_hints, Iterable, Union
+from typing import Any, Callable, cast, Dict, get_type_hints, Iterable, TypeVar, Union
 
 import flask
+try:
+    from flask_restful import Api as FlaskRestfulApi
+except ImportError:
+    FlaskRestfulApi = None
 try:
     import flask_restplus
 except ImportError:
@@ -27,10 +31,12 @@ __author__ = 'Alec Thomas <alec@swapoff.org>'
 __version__ = '0.9.0'
 __all__ = ['request', 'RequestScope', 'Config', 'Request', 'FlaskInjector', ]
 
+T = TypeVar('T', LocalProxy, Callable)
 
-def wrap_fun(fun: Callable, injector: Injector) -> Callable:
+
+def wrap_fun(fun: T, injector: Injector) -> T:
     if isinstance(fun, LocalProxy):
-        return fun
+        return fun  # type: ignore
 
     # Important: this block needs to stay here so it's executed *before* the
     # hasattr(fun, '__call__') block below - otherwise things may crash.
@@ -61,7 +67,7 @@ def wrap_fun(fun: Callable, injector: Injector) -> Callable:
     return fun
 
 
-def wrap_function(fun: Callable, injector: Injector):
+def wrap_function(fun: Callable, injector: Injector) -> Callable:
     @functools.wraps(fun)
     def wrapper(*args: Any, **kwargs: Any) -> Any:
         return injector.call_with_injection(callable=fun, args=args, kwargs=kwargs)
@@ -152,7 +158,11 @@ def wrap_class_based_view(fun: Callable, injector: Injector) -> Callable:
     return fun
 
 
-def wrap_flask_restful_resource(fun: Callable, flask_restful_api, injector: Injector) -> Callable:
+def wrap_flask_restful_resource(
+    fun: Callable,
+    flask_restful_api: FlaskRestfulApi,
+    injector: Injector,
+) -> Callable:
     """
     This is needed because of how flask_restful views are registered originally.
 
@@ -228,7 +238,7 @@ class RequestScope(Scope):
     # We don't want to assign here, just provide type hints
     if False:
         _local_manager = None  # type: LocalManager
-        _locals = None  # type: Local
+        _locals = None  # type: Any
 
     def cleanup(self) -> None:
         self._local_manager.cleanup()
