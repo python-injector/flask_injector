@@ -9,7 +9,7 @@ test: mypy
 .PHONY: mypy
 mypy:
 	python -m mypy \
-		--silent-imports \
+		--ignore-missing-imports --follow-imports=skip \
 		--disallow-untyped-defs \
 		--warn-no-return \
 		--warn-redundant-casts \
