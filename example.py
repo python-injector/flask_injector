@@ -43,8 +43,7 @@ class KeyValue(Base):
 
 def configure_views(app, cached):
     @app.route('/<key>')
-    @inject(db=SQLAlchemy)
-    def get(key, db):
+    def get(key, db: SQLAlchemy):
         try:
             kv = db.session.query(KeyValue).filter(KeyValue.key == key).one()
         except NoResultFound:
@@ -55,14 +54,12 @@ def configure_views(app, cached):
 
     @cached(timeout=1)
     @app.route('/')
-    @inject(db=SQLAlchemy)
-    def list(db):
+    def list(db: SQLAlchemy):
         data = [i.key for i in db.session.query(KeyValue).order_by(KeyValue.key)]
         return jsonify(keys=data)
 
     @app.route('/', methods=['POST'])
-    @inject(request=Request, db=SQLAlchemy)
-    def create(request, db):
+    def create(request: Request, db: SQLAlchemy):
         kv = KeyValue(request.form['key'], request.form['value'])
         db.session.add(kv)
         db.session.commit()
@@ -71,8 +68,7 @@ def configure_views(app, cached):
         return response
 
     @app.route('/<key>', methods=['DELETE'])
-    @inject(db=SQLAlchemy)
-    def delete(db, key):
+    def delete(db: SQLAlchemy, key):
         db.session.query(KeyValue).filter(KeyValue.key == key).delete()
         db.session.commit()
         response = jsonify(status='OK')

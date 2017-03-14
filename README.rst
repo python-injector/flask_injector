@@ -61,16 +61,15 @@ Example application using Flask-Injector
 
     # Route with injection
     @app.route("/foo")
-    @inject(db=sqlite3.Connection)
-    def foo(db):
+    def foo(db: sqlite3.Connection):
         users = db.execute('SELECT * FROM users').all()
         return render("foo.html")
 
 
     # Class-based view with injected constructor
     class Waz(View):
-        @inject(db=sqlite3.Connection)
-        def __init__(self, db):
+        @inject
+        def __init__(self, db: sqlite3.Connection):
             self.db = db
 
         def dispatch_request(self, key):
@@ -132,8 +131,8 @@ of `injector.Module` or a callable taking an `injector.Binder` instance.
     from injector import Module
 
     class MyModule(Module):
-        @inject(app=Flask)
-        def configure(self, binder, app):
+        @inject
+        def configure(self, binder, app: Flask):
             binder.bind(ExtClass, to=ExtClass(app), scope=singleton)
 
     def main():
@@ -149,33 +148,3 @@ of `injector.Module` or a callable taking an `injector.Binder` instance.
         app.run()
 
 *Make sure to bind extension objects as singletons.*
-
-
-Using Python 3+ function annotations
-------------------------------------
-
-If you want to use function annotations you can either pass
-``use_annotations=True`` in the ``FlaskInjector`` constructor or provide an
-already configured ``Injector`` instance with ``use_annotations`` enabled,
-for example:
-
-.. code:: python
-
-    from flask import Flask
-    from flask_injector import FlaskInjector
-
-    app = Flask(__name__)
-
-    @app.route("/")
-    def index(s: str):
-        return s
-
-    def configure(binder):
-        binder.bind(str, to='this is a test')
-
-    FlaskInjector(app=app, modules=[configure], use_annotations=True)
-
-    # Alternatively:
-    from injector import Injector
-    injector = Injector(..., use_annotations=True)
-    FlaskInjector(app=app, injector=injector)
