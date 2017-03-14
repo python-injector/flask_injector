@@ -131,9 +131,10 @@ of `injector.Module` or a callable taking an `injector.Binder` instance.
     from injector import Module
 
     class MyModule(Module):
-        @inject
-        def configure(self, binder, app: Flask):
-            binder.bind(ExtClass, to=ExtClass(app), scope=singleton)
+        @provides
+        @singleton
+        def provide_ext(self, app: Flask) -> ExtClass:
+            return ExtClass(app)
 
     def main():
         app = Flask(__name__)
