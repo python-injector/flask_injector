@@ -1,6 +1,11 @@
 Flask-Injector Changelog
 ========================
 
+Version 0.10.0 (not released yet)
+---------------------------------
+
+* Dropped support for Injector < 0.12 and Flask < 0.12
+
 Version 0.9.0
 -------------
 
