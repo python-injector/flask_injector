@@ -129,9 +129,12 @@ of `injector.Module` or a callable taking an `injector.Binder` instance.
 
 .. code:: python
 
-    @inject(app=Flask)
-    def configure_ext(binder, app):
-        binder.bind(ExtClass, to=ExtClass(app), scope=singleton)
+    from injector import Module
+
+    class MyModule(Module):
+        @inject(app=Flask)
+        def configure(self, binder, app):
+            binder.bind(ExtClass, to=ExtClass(app), scope=singleton)
 
     def main():
         app = Flask(__name__)
@@ -141,7 +144,7 @@ of `injector.Module` or a callable taking an `injector.Binder` instance.
 
         # attach your views etc. here
 
-        FlaskInjector(app=app, modules=[configure_ext])
+        FlaskInjector(app=app, modules=[MyModule])
 
         app.run()
 
