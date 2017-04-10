@@ -131,7 +131,7 @@ of `injector.Module` or a callable taking an `injector.Binder` instance.
     from injector import Module
 
     class MyModule(Module):
-        @provides
+        @provider
         @singleton
         def provide_ext(self, app: Flask) -> ExtClass:
             return ExtClass(app)
