@@ -319,17 +319,22 @@ class FlaskInjector:
         ):
             process_dict(container, injector)
 
+        # This is to make sure that mypy sees a non-nullable variable
+        # in the closures below, otherwise it'd complain that injector
+        # union may not have get attribute
+        injector_not_null = injector
+
         def reset_request_scope_before(*args: Any, **kwargs: Any) -> None:
-            injector.get(request_scope_class).prepare()
+            injector_not_null.get(request_scope_class).prepare()
 
         def reset_request_scope_after(*args: Any, **kwargs: Any) -> None:
-            injector.get(request_scope_class).cleanup()
+            injector_not_null.get(request_scope_class).cleanup()
 
         app.before_request_funcs.setdefault(
             None, []).insert(0, reset_request_scope_before)
         app.teardown_request(reset_request_scope_after)
 
-        self.injector = injector
+        self.injector = injector_not_null
         self.app = app
 
 
