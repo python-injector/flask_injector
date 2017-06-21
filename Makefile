@@ -14,5 +14,4 @@ mypy:
 		--warn-no-return \
 		--warn-redundant-casts \
 		--strict-optional \
-		--fast-parser \
 		flask_injector.py
