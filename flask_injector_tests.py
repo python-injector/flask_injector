@@ -6,7 +6,7 @@ from functools import partial
 import flask_restful
 import flask_restplus
 from eventlet import greenthread
-from injector import __version__ as injector_version, CallableProvider
+from injector import __version__ as injector_version, CallableProvider, inject
 from flask import Blueprint, Flask
 from flask.templating import render_template_string
 from flask.views import View
@@ -34,6 +34,7 @@ def test_injections():
         return render_template_string(content)
 
     class View2(View):
+        @inject
         def __init__(self, *args, content: list, **kwargs):
             self.content = content
             super().__init__(*args, **kwargs)
@@ -66,7 +67,7 @@ def test_injections():
 
     app.add_url_rule('/view2', view_func=View2.as_view('view2'))
 
-    FlaskInjector(app=app, modules=[conf], use_annotations=True)
+    FlaskInjector(app=app, modules=[conf])
 
     with app.test_client() as c:
         response = c.get('/view1')
@@ -174,7 +175,7 @@ def test_doesnt_raise_deprecation_warning():
     def index(s: str):
         return s
 
-    FlaskInjector(app=app, modules=[configure], use_annotations=True)
+    FlaskInjector(app=app, modules=[configure])
 
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always")
@@ -198,7 +199,7 @@ def test_jinja_env_globals_support_injection():
     def index():
         return render_template_string('{{ do_something() }}')
 
-    FlaskInjector(app=app, modules=[configure], use_annotations=True)
+    FlaskInjector(app=app, modules=[configure])
 
     with app.test_client() as c:
         eq_(c.get('/').get_data(as_text=True), 'xyz')
@@ -225,7 +226,7 @@ def test_error_handlers_support_injection():
     def configure(binder):
         binder.bind(str, to='injected content')
 
-    FlaskInjector(app=app, modules=[configure], use_annotations=True)
+    FlaskInjector(app=app, modules=[configure])
 
     with app.test_client() as c:
         response = c.get('/this-page-does-not-exist')
@@ -285,6 +286,7 @@ def test_view_args_and_class_args_are_passed_to_class_based_views():
 def test_flask_restful_integration_works():
 
     class HelloWorld(flask_restful.Resource):
+        @inject
         def __init__(self, *args, int: int, **kwargs):
             self._int = int
             super().__init__(*args, **kwargs)
@@ -297,7 +299,7 @@ def test_flask_restful_integration_works():
 
     api.add_resource(HelloWorld, '/')
 
-    FlaskInjector(app=app, use_annotations=True)
+    FlaskInjector(app=app)
 
     client = app.test_client()
     response = client.get('/')
@@ -307,6 +309,7 @@ def test_flask_restful_integration_works():
 
 def test_flask_restplus_integration_works():
     class HelloWorld(flask_restplus.Resource):
+        @inject
         def __init__(self, *args, int: int, **kwargs):
             self._int = int
             super().__init__(*args, **kwargs)
@@ -319,7 +322,7 @@ def test_flask_restplus_integration_works():
 
     api.add_resource(HelloWorld, '/hello')
 
-    FlaskInjector(app=app, use_annotations=True)
+    FlaskInjector(app=app)
 
     client = app.test_client()
     response = client.get('/hello')
@@ -364,7 +367,7 @@ if injector_version >= '0.12':
         def index(x: 'X'):
             return x.message
 
-        FlaskInjector(app=app, use_annotations=True)
+        FlaskInjector(app=app)
 
         # The class needs to be module-global in order for the string -> object
         # resolution mechanism to work. I could make it work with locals but it

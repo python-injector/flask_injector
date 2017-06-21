@@ -272,7 +272,6 @@ class FlaskInjector:
         modules: Iterable[_ModuleT] = [],
         injector: Injector = None,
         request_scope_class: type = RequestScope,
-        use_annotations: bool = None,
     ) -> None:
         """Initializes Injector for the application.
 
@@ -287,21 +286,10 @@ class FlaskInjector:
             a new instance will be created.
         :type app: :class:`flask.Flask`
         :type modules: Iterable of configuration modules
-        :param use_annotations: Enables Python 3 annotation support, see Injector
-                                documentation for details.
-        :type use_annotations: bool
         :rtype: :class:`injector.Injector`
         """
-        if injector and use_annotations is not None:
-            raise AssertionError(
-                'You cannot set use_annotations and pass Injector instance '
-                'at the same time',
-            )
         if not injector:
-            kwargs = {}
-            if use_annotations is not None:
-                kwargs['use_annotations'] = use_annotations
-            injector = Injector(**kwargs)
+            injector = Injector()
 
         modules = list(modules)
         modules.insert(0, FlaskModule(app=app, request_scope_class=request_scope_class))

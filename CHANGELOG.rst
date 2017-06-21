@@ -5,6 +5,10 @@ Version 0.10.0 (not released yet)
 ---------------------------------
 
 * Dropped support for Injector < 0.12 and Flask < 0.12
+* Dropped use_annotations constructor parameter (this also fixed compatibility
+  with Injector 0.13)
+* At least for the time being class-based views' constructors need to be marked
+  with @inject in order for dependencies to be injected
 
 Version 0.9.0
 -------------
