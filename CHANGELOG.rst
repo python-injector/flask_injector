@@ -1,8 +1,8 @@
 Flask-Injector Changelog
 ========================
 
-Version 0.10.0 (not released yet)
----------------------------------
+Version 0.10.0
+--------------
 
 * Dropped support for Injector < 0.12 and Flask < 0.12
 * Dropped use_annotations constructor parameter (this also fixed compatibility
