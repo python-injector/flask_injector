@@ -6,7 +6,7 @@ from functools import partial
 import flask_restful
 import flask_restplus
 from eventlet import greenthread
-from injector import __version__ as injector_version, CallableProvider, inject
+from injector import __version__ as injector_version, CallableProvider, inject, Scope
 from flask import Blueprint, Flask
 from flask.templating import render_template_string
 from flask.views import View
@@ -85,7 +85,7 @@ def test_resets():
 
     counter = [0]
 
-    class Scope(object):
+    class OurScope(Scope):
         def __init__(self, injector):
             pass
 
@@ -99,7 +99,7 @@ def test_resets():
     def index():
         return 'asd'
 
-    FlaskInjector(app, request_scope_class=Scope)
+    FlaskInjector(app, request_scope_class=OurScope)
 
     eq_(counter[0], 0)
 
