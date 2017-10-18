@@ -20,7 +20,7 @@ try:
     import flask_restplus
 except ImportError:
     flask_restplus = None
-from injector import Binder, Injector, inject
+from injector import __version__ as injector_version, Binder, Injector, inject
 from flask import Config, Request
 from werkzeug.local import Local, LocalManager, LocalProxy
 from werkzeug.wrappers import Response
@@ -342,7 +342,10 @@ class FlaskModule(Module):
         self.request_scope_class = request_scope_class
 
     def configure(self, binder: Binder) -> None:
-        binder.bind_scope(self.request_scope_class)
+        # Starting with Injector 0.13.2 explicit scope binding is no longer
+        # necessary
+        if injector_version < '0.13.2':
+            binder.bind_scope(self.request_scope_class)
         binder.bind(flask.Flask, to=self.app, scope=singleton)
         binder.bind(Config, to=self.app.config, scope=singleton)
         binder.bind(Request, to=lambda: flask.request)

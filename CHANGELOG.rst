@@ -1,6 +1,11 @@
 Flask-Injector Changelog
 ========================
 
+Version 0.10.1
+--------------
+
+* Got rid of a deprecation warning when Injector 0.13.2 is used
+
 Version 0.10.0
 --------------
 
