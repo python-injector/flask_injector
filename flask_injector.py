@@ -14,12 +14,15 @@ from typing import Any, Callable, cast, Dict, get_type_hints, Iterable, TypeVar,
 import flask
 try:
     from flask_restful import Api as FlaskRestfulApi
+    from flask_restful.utils import unpack as flask_response_unpack
 except ImportError:
     FlaskRestfulApi = None
 try:
     import flask_restplus
+    from flask_restplus.utils import unpack as flask_response_unpack  # noqa
 except ImportError:
     flask_restplus = None
+
 from injector import __version__ as injector_version, Binder, Injector, inject
 from flask import Config, Request
 from werkzeug.local import Local, LocalManager, LocalProxy
@@ -168,8 +171,6 @@ def wrap_flask_restful_resource(
 
     :type flask_restful_api: :class:`flask_restful.Api`
     """
-    from flask_restful.utils import unpack
-
     # The following fragment of code is copied from flask_restful project
 
     """
@@ -205,7 +206,7 @@ def wrap_flask_restful_resource(
         resp = fun(*args, **kwargs)
         if isinstance(resp, Response):  # There may be a better way to test
             return resp
-        data, code, headers = unpack(resp)
+        data, code, headers = flask_response_unpack(resp)
         return flask_restful_api.make_response(data, code, headers=headers)
 
     # end of flask_restful code
