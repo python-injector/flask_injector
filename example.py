@@ -4,8 +4,7 @@ import logging
 from injector import Module, Injector, inject, singleton
 from flask import Flask, Request, jsonify
 from flask_injector import FlaskInjector
-from flask.ext.cache import Cache
-from flask.ext.sqlalchemy import SQLAlchemy
+from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy import Column, String
@@ -41,7 +40,7 @@ class KeyValue(Base):
         return
 
 
-def configure_views(app, cached):
+def configure_views(app):
     @app.route('/<key>')
     def get(key, db: SQLAlchemy):
         try:
@@ -52,7 +51,6 @@ def configure_views(app, cached):
             return response
         return jsonify(key=kv.key, value=kv.value)
 
-    @cached(timeout=1)
     @app.route('/')
     def list(db: SQLAlchemy):
         data = [i.key for i in db.session.query(KeyValue).order_by(KeyValue.key)]
@@ -86,7 +84,6 @@ class AppModule(Module):
         # the DB to be configured before request handlers are called.
         db = self.configure_db(self.app)
         binder.bind(SQLAlchemy, to=db, scope=singleton)
-        binder.bind(Cache, to=Cache(self.app), scope=singleton)
 
     def configure_db(self, app):
         db = SQLAlchemy(app)
@@ -103,13 +100,12 @@ def main():
     app = Flask(__name__)
     app.config.update(
         DB_CONNECTION_STRING=':memory:',
-        CACHE_TYPE='simple',
         SQLALCHEMY_DATABASE_URI='sqlite://',
     )
     app.debug = True
 
     injector = Injector([AppModule(app)])
-    configure_views(app=app, cached=injector.get(Cache).cached)
+    configure_views(app=app)
 
     FlaskInjector(app=app, injector=injector)
 
