@@ -48,6 +48,11 @@ def test_injections():
         inc()
         eq_(c, l)
 
+    @app.before_first_request
+    def bfr(c: list):
+        inc()
+        eq_(c, l)
+
     @app.after_request
     def ar(response_class, c: list):
         inc()
@@ -77,7 +82,7 @@ def test_injections():
         response = c.get('/view2')
         eq_(response.get_data(as_text=True), '%s' % (l,))
 
-    eq_(counter[0], 10)
+    eq_(counter[0], 11)
 
 
 def test_resets():

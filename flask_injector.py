@@ -9,7 +9,7 @@
 #
 # Author: Alec Thomas <alec@swapoff.org>
 import functools
-from typing import Any, Callable, cast, Dict, get_type_hints, Iterable, TypeVar, Union
+from typing import Any, Callable, cast, Dict, get_type_hints, Iterable, List, TypeVar, Union
 
 import flask
 try:
@@ -308,6 +308,8 @@ class FlaskInjector:
         ):
             process_dict(container, injector)
 
+        process_list(app.before_first_request_funcs, injector)
+
         # This is to make sure that mypy sees a non-nullable variable
         # in the closures below, otherwise it'd complain that injector
         # union may not have get attribute
@@ -330,11 +332,16 @@ class FlaskInjector:
 def process_dict(d: Dict, injector: Injector) -> None:
     for key, value in d.items():
         if isinstance(value, list):
-            value[:] = [wrap_fun(fun, injector) for fun in value]
+            process_list(value, injector)
         elif hasattr(value, '__call__'):
             d[key] = wrap_fun(value, injector)
         elif isinstance(value, dict):
             process_dict(value, injector)
+
+
+def process_list(l: List, injector: Injector) -> None:
+    # This function mutates the l parameter
+    l[:] = [wrap_fun(fun, injector) for fun in l]
 
 
 class FlaskModule(Module):
