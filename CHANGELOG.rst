@@ -1,6 +1,17 @@
 Flask-Injector Changelog
 ========================
 
+Version 0.11.0
+--------------
+
+* flask_restful is no longer required to be installed when flask_restplus is
+  used (#24)
+* Added support for injecting into before_first_request functions (#26)
+
+Backwards incompatible:
+
+* Dropped Python 3.3 support
+
 Version 0.10.1
 --------------
 
