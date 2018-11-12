@@ -100,9 +100,9 @@ def wrap_class_based_view(fun: Callable, injector: Injector) -> Callable:
         assert not class_args, 'Class args are not supported, use kwargs instead'
 
     if (
-        flask_restful_api and
-        flask_restplus and
-        isinstance(flask_restful_api, flask_restplus.Api)
+        flask_restful_api
+        and flask_restplus
+        and isinstance(flask_restful_api, flask_restplus.Api)
     ):
         # This is flask_restplus' add_resource implementation:
         #
