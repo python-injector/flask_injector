@@ -328,6 +328,10 @@ class FlaskInjector:
         self.injector = injector_not_null
         self.app = app
 
+        # Store the FlaskInjector on the application so it can be fetched
+        # via flask.current_app for use with @flask_inject.
+        self.app.extensions['flask_injector'] = self
+
 
 def process_dict(d: Dict, injector: Injector) -> None:
     for key, value in d.items():
@@ -357,3 +361,23 @@ class FlaskModule(Module):
         binder.bind(flask.Flask, to=self.app, scope=singleton)
         binder.bind(Config, to=self.app.config, scope=singleton)
         binder.bind(Request, to=lambda: flask.request)
+
+
+def flask_inject(func: Callable) -> Callable:
+    """
+    Inject dependencies using FlaskInjector at runtime.
+
+    Only useful when running inside the Flask application context.
+    """
+
+    # Call the original @inject decorator to create the `__bindings__` map.
+    injected_func = inject(func)
+
+    # Wrap the function to fetch the Injector instance from the current Flask
+    # application and use it to inject arguments when called.
+    @functools.wraps(injected_func)
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
+        i = flask.current_app.extensions['flask_injector'].injector
+        return i.call_with_injection(injected_func, args=args, kwargs=kwargs)
+
+    return wrapper

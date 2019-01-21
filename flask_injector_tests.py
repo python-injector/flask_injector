@@ -12,7 +12,7 @@ from flask.templating import render_template_string
 from flask.views import View
 from nose.tools import eq_
 
-from flask_injector import request, FlaskInjector
+from flask_injector import request, FlaskInjector, flask_inject
 
 
 def test_injections():
@@ -362,6 +362,21 @@ def test_noninstrospectable_hooks_dont_crash_everything():
 
     # It'd crash here
     FlaskInjector(app=app)
+
+
+def test_function_injection():
+    def configure(binder):
+        binder.bind(str, to='this is string', scope=request)
+
+    app = Flask(__name__)
+    FlaskInjector(app=app, modules=[configure])
+
+    @flask_inject
+    def func(this: str):
+        return this
+
+    with app.app_context():
+        assert func() == 'this is string'
 
 
 if injector_version >= '0.12':
