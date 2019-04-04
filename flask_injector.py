@@ -9,6 +9,7 @@
 #
 # Author: Alec Thomas <alec@swapoff.org>
 import functools
+from inspect import ismethod
 from typing import Any, Callable, cast, Dict, get_type_hints, Iterable, List, TypeVar, Union
 
 import flask
@@ -37,9 +38,19 @@ __all__ = ['request', 'RequestScope', 'Config', 'Request', 'FlaskInjector', ]
 T = TypeVar('T', LocalProxy, Callable)
 
 
+def instance_method_wrapper(im: T) -> T:
+    @functools.wraps(im)
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
+        return im(*args, **kwargs)
+    return wrapper  # type: ignore
+
+
 def wrap_fun(fun: T, injector: Injector) -> T:
     if isinstance(fun, LocalProxy):
         return fun  # type: ignore
+
+    if ismethod(fun):
+        fun = instance_method_wrapper(fun)
 
     # Important: this block needs to stay here so it's executed *before* the
     # hasattr(fun, '__call__') block below - otherwise things may crash.
