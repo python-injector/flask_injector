@@ -38,7 +38,7 @@ __all__ = ['request', 'RequestScope', 'Config', 'Request', 'FlaskInjector', ]
 T = TypeVar('T', LocalProxy, Callable)
 
 
-def instance_method_wrapper(im):
+def instance_method_wrapper(im: T) -> T:
     @functools.wraps(im)
     def wrapper(*args, **kwargs):
         return im(*args, **kwargs)
