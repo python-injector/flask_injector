@@ -364,6 +364,33 @@ def test_noninstrospectable_hooks_dont_crash_everything():
     FlaskInjector(app=app)
 
 
+def test_instance_methods():
+    class HelloWorldService:
+        def get_value(self):
+            return "test message 1"
+
+    class HelloWorld():
+        def from_injected_service(self, service: HelloWorldService):
+            return service.get_value()
+        
+        def static_value(self):
+            return "test message 2"
+
+    app = Flask(__name__)
+    hello_world = HelloWorld()
+    app.add_url_rule('/from_injected_service', 'from_injected_service', hello_world.from_injected_service)
+    app.add_url_rule('/static_value', 'static_value', hello_world.static_value)
+
+    FlaskInjector(app=app)
+
+    client = app.test_client()
+    response = client.get('/from_injected_service')
+    eq_(response.data.decode('utf-8'), "test message 1")
+
+    response = client.get('/static_value')
+    eq_(response.data.decode('utf-8'), "test message 2")
+
+
 if injector_version >= '0.12':
     def test_forward_references_work():
         app = Flask(__name__)
