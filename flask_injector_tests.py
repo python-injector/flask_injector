@@ -372,7 +372,7 @@ def test_instance_methods():
     class HelloWorld():
         def from_injected_service(self, service: HelloWorldService):
             return service.get_value()
-        
+
         def static_value(self):
             return "test message 2"
 
