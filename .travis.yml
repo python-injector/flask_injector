@@ -7,6 +7,8 @@ python:
 matrix:
   allow_failures:
     - python: "nightly"
+  include:
+    - { python: "3.7", dist: xenial, sudo: true }
 env:
   - INJECTOR_VERSION="<0.13" FLASK_VERSION=">0.11"
   - INJECTOR_VERSION=">=0.13" FLASK_VERSION=">0.11"
