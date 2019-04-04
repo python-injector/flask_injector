@@ -40,9 +40,9 @@ T = TypeVar('T', LocalProxy, Callable)
 
 def instance_method_wrapper(im: T) -> T:
     @functools.wraps(im)
-    def wrapper(*args, **kwargs):
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
         return im(*args, **kwargs)
-    return wrapper
+    return wrapper  # type: ignore
 
 
 def wrap_fun(fun: T, injector: Injector) -> T:
