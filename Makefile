@@ -9,7 +9,7 @@ test:
 	PYTHONPATH=.:$(PYTHONPATH) python example.py
 
 .PHONY: lint
-lint: flake8 mypy
+lint: flake8 mypy black-check
 
 .PHONY: flake8
 flake8:
@@ -24,3 +24,7 @@ mypy:
 		--warn-redundant-casts \
 		--strict-optional \
 		flask_injector.py
+
+.PHONY: black-check
+black-check:
+	black --check .

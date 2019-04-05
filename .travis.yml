@@ -11,5 +11,6 @@ matrix:
     - { python: "3.7", dist: xenial, sudo: true }
 install:
   - pip install flake8 nose==1.3.0 flask flask_restful flask_restplus injector flask_sqlalchemy eventlet typing mypy typed_ast
+  - if [[ "${TRAVIS_PYTHON_VERSION}" != "3.5"* ]] ; then pip install black ; fi
 script:
-  - make ci
+  - if [[ "${TRAVIS_PYTHON_VERSION}" != "3.5"* ]] ; then make ci ; else make test ; fi
