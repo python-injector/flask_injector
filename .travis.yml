@@ -9,12 +9,7 @@ matrix:
     - python: "nightly"
   include:
     - { python: "3.7", dist: xenial, sudo: true }
-env:
-  - INJECTOR_VERSION="<0.13" FLASK_VERSION=">0.11"
-  - INJECTOR_VERSION=">=0.13" FLASK_VERSION=">0.11"
-  - INJECTOR_VERSION="<0.13" FLASK_VERSION=">0.11,<1.0"
-  - INJECTOR_VERSION=">=0.13" FLASK_VERSION=">0.11,<1.0"
 install:
-  - pip install flake8 nose==1.3.0 flask$FLASK_VERSION flask_restful flask_restplus injector$INJECTOR_VERSION flask_sqlalchemy eventlet typing mypy typed_ast
+  - pip install flake8 nose==1.3.0 flask flask_restful flask_restplus injector flask_sqlalchemy eventlet typing mypy typed_ast
 script:
   - make test
