@@ -13,6 +13,7 @@ from inspect import ismethod
 from typing import Any, Callable, cast, Dict, get_type_hints, Iterable, List, TypeVar, Union
 
 import flask
+
 try:
     from flask_restful import Api as FlaskRestfulApi
     from flask_restful.utils import unpack as flask_response_unpack
@@ -33,7 +34,7 @@ from injector import Module, Provider, Scope, ScopeDecorator, singleton
 
 __author__ = 'Alec Thomas <alec@swapoff.org>'
 __version__ = '0.11.0'
-__all__ = ['request', 'RequestScope', 'Config', 'Request', 'FlaskInjector', ]
+__all__ = ['request', 'RequestScope', 'Config', 'Request', 'FlaskInjector']
 
 T = TypeVar('T', LocalProxy, Callable)
 
@@ -42,6 +43,7 @@ def instance_method_wrapper(im: T) -> T:
     @functools.wraps(im)
     def wrapper(*args: Any, **kwargs: Any) -> Any:
         return im(*args, **kwargs)
+
     return wrapper  # type: ignore
 
 
@@ -85,6 +87,7 @@ def wrap_function(fun: Callable, injector: Injector) -> Callable:
     @functools.wraps(fun)
     def wrapper(*args: Any, **kwargs: Any) -> Any:
         return injector.call_with_injection(callable=fun, args=args, kwargs=kwargs)
+
     return wrapper
 
 
@@ -110,11 +113,7 @@ def wrap_class_based_view(fun: Callable, injector: Injector) -> Callable:
         class_args = fun_closure.get('class_args')
         assert not class_args, 'Class args are not supported, use kwargs instead'
 
-    if (
-        flask_restful_api
-        and flask_restplus
-        and isinstance(flask_restful_api, flask_restplus.Api)
-    ):
+    if flask_restful_api and flask_restplus and isinstance(flask_restful_api, flask_restplus.Api):
         # This is flask_restplus' add_resource implementation:
         #
         #     def add_resource(self, resource, *urls, **kwargs):
@@ -173,9 +172,7 @@ def wrap_class_based_view(fun: Callable, injector: Injector) -> Callable:
 
 
 def wrap_flask_restful_resource(
-    fun: Callable,
-    flask_restful_api: FlaskRestfulApi,
-    injector: Injector,
+    fun: Callable, flask_restful_api: FlaskRestfulApi, injector: Injector
 ) -> Callable:
     """
     This is needed because of how flask_restful views are registered originally.
@@ -309,13 +306,13 @@ class FlaskInjector:
             injector.binder.install(module)
 
         for container in (
-                app.view_functions,
-                app.before_request_funcs,
-                app.after_request_funcs,
-                app.teardown_request_funcs,
-                app.template_context_processors,
-                app.jinja_env.globals,
-                app.error_handler_spec,
+            app.view_functions,
+            app.before_request_funcs,
+            app.after_request_funcs,
+            app.teardown_request_funcs,
+            app.template_context_processors,
+            app.jinja_env.globals,
+            app.error_handler_spec,
         ):
             process_dict(container, injector)
 
@@ -332,8 +329,7 @@ class FlaskInjector:
         def reset_request_scope_after(*args: Any, **kwargs: Any) -> None:
             injector_not_null.get(request_scope_class).cleanup()
 
-        app.before_request_funcs.setdefault(
-            None, []).insert(0, reset_request_scope_before)
+        app.before_request_funcs.setdefault(None, []).insert(0, reset_request_scope_before)
         app.teardown_request(reset_request_scope_after)
 
         self.injector = injector_not_null

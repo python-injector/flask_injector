@@ -79,6 +79,7 @@ class AppModule(Module):
         self.app = app
 
     """Configure the application."""
+
     def configure(self, binder):
         # We configure the DB here, explicitly, as Flask-SQLAlchemy requires
         # the DB to be configured before request handlers are called.
@@ -88,20 +89,14 @@ class AppModule(Module):
     def configure_db(self, app):
         db = SQLAlchemy(app)
         Base.metadata.create_all(db.engine)
-        db.session.add_all([
-            KeyValue('hello', 'world'),
-            KeyValue('goodbye', 'cruel world'),
-        ])
+        db.session.add_all([KeyValue('hello', 'world'), KeyValue('goodbye', 'cruel world')])
         db.session.commit()
         return db
 
 
 def main():
     app = Flask(__name__)
-    app.config.update(
-        DB_CONNECTION_STRING=':memory:',
-        SQLALCHEMY_DATABASE_URI='sqlite://',
-    )
+    app.config.update(DB_CONNECTION_STRING=':memory:', SQLALCHEMY_DATABASE_URI='sqlite://')
     app.debug = True
 
     injector = Injector([AppModule(app)])

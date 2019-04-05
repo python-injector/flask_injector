@@ -160,9 +160,7 @@ def test_memory_leak():
     # Force run garbage collect to make sure GreenThread object is collected if
     # there is no memory leak
     gc.collect()
-    greenthread_count = len([
-        obj for obj in gc.get_objects()
-        if type(obj) is greenthread.GreenThread])
+    greenthread_count = len([obj for obj in gc.get_objects() if type(obj) is greenthread.GreenThread])
 
     eq_(greenthread_count, 0)
 
@@ -235,12 +233,10 @@ def test_error_handlers_support_injection():
 
     with app.test_client() as c:
         response = c.get('/this-page-does-not-exist')
-        eq_((response.status_code, response.get_data(as_text=True)),
-            (404, 'injected content'))
+        eq_((response.status_code, response.get_data(as_text=True)), (404, 'injected content'))
 
         response = c.get('/custom-exception')
-        eq_((response.status_code, response.get_data(as_text=True)),
-            (500, 'injected content'))
+        eq_((response.status_code, response.get_data(as_text=True)), (500, 'injected content'))
 
 
 def test_view_functions_arent_modified_globally():
@@ -268,9 +264,7 @@ def test_view_functions_arent_modified_globally():
 
 
 def test_view_args_and_class_args_are_passed_to_class_based_views():
-
     class MyView(View):
-
         def __init__(self, class_arg):
             self.class_arg = class_arg
 
@@ -289,7 +283,6 @@ def test_view_args_and_class_args_are_passed_to_class_based_views():
 
 
 def test_flask_restful_integration_works():
-
     class HelloWorld(flask_restful.Resource):
         @inject
         def __init__(self, *args, int: int, **kwargs):
@@ -369,7 +362,7 @@ def test_instance_methods():
         def get_value(self):
             return "test message 1"
 
-    class HelloWorld():
+    class HelloWorld:
         def from_injected_service(self, service: HelloWorldService):
             return service.get_value()
 
@@ -392,6 +385,7 @@ def test_instance_methods():
 
 
 if injector_version >= '0.12':
+
     def test_forward_references_work():
         app = Flask(__name__)
 

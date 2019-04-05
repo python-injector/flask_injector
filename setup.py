@@ -5,9 +5,7 @@ long_description = open('README.rst').read()
 
 # very convoluted way of reading version from the module without importing it
 version = (
-    [l for l in open('flask_injector.py') if '__version__ = ' in l][0]
-    .split('=')[-1]
-    .strip().strip('\'')
+    [l for l in open('flask_injector.py') if '__version__ = ' in l][0].split('=')[-1].strip().strip('\'')
 )
 
 if __name__ == '__main__':
