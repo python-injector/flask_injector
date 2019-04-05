@@ -11,7 +11,7 @@ this way there's no need to use global Flask objects, which makes testing simple
 
 Injector is a dependency-injection framework for Python, inspired by Guice.
 
-`Flask-Injector` is compatible with CPython 3.3+.
+`Flask-Injector` is compatible with CPython 3.5+.
 As of version 0.12.0 it requires Injector version 0.13.2 or greater and Flask
 1.0 or greater.
 
