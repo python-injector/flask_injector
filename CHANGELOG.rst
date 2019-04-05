@@ -1,6 +1,17 @@
 Flask-Injector Changelog
 ========================
 
+Version 0.12.0
+--------------
+
+* Added support for adding instance methods as handlers (#35, thanks to Rene Hollander)
+
+Backwards incompatible:
+
+* Dropped Python 3.4 support
+* Dropped Flask < 1.0 support
+* Dropped Injector < 0.13.2 support
+
 Version 0.11.0
 --------------
 
