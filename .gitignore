@@ -3,3 +3,5 @@ dist/
 build/
 *.egg-info/
 .mypy_cache/
+cover/
+coverage.xml
