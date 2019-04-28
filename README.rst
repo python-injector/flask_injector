@@ -4,6 +4,9 @@ Flask-Injector
 .. image:: https://secure.travis-ci.org/alecthomas/flask_injector.png?branch=master
    :alt: Build status
    :target: https://travis-ci.org/alecthomas/flask_injector
+.. image:: https://coveralls.io/repos/github/alecthomas/flask_injector/badge.svg?branch=master
+   :alt: Coverage status
+   :target: https://coveralls.io/github/alecthomas/flask_injector?branch=master
 
 
 Adds `Injector <https://github.com/alecthomas/injector>`_ support to Flask,
