@@ -21,7 +21,7 @@ if __name__ == '__main__':
         py_modules=['flask_injector'],
         zip_safe=True,
         platforms='any',
-        install_requires=['Flask', 'injector>=0.10.0', 'typing'],
+        install_requires=['Flask', 'injector>=0.10.0', 'typing; python_version < "3.5"'],
         keywords=['Dependency Injection', 'Flask'],
         classifiers=[
             'Development Status :: 5 - Production/Stable',
