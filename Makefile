@@ -1,4 +1,4 @@
-SOURCES := flask_injector.py flask_injector_tests.py
+SOURCES := flask_injector
 
 .PHONY: ci
 ci: test lint
@@ -24,7 +24,7 @@ mypy:
 		--warn-no-return \
 		--warn-redundant-casts \
 		--strict-optional \
-		flask_injector.py
+		flask_injector/__init__.py
 
 .PHONY: black-check
 black-check:
