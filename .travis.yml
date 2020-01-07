@@ -3,12 +3,11 @@ sudo: false
 python:
   - "3.5"
   - "3.6"
+  - "3.7"
   - "nightly"
 matrix:
   allow_failures:
     - python: "nightly"
-  include:
-    - { python: "3.7", dist: xenial, sudo: true }
 install:
   - pip install coveralls flake8 nose flask flask_restful flask_restplus injector flask_sqlalchemy eventlet typing mypy typed_ast
   - if [[ "${TRAVIS_PYTHON_VERSION}" != "3.5"* ]] ; then pip install black ; fi
