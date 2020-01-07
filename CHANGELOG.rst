@@ -1,6 +1,14 @@
 Flask-Injector Changelog
 ========================
 
+Version 0.12.1
+--------------
+
+* Stopped unnecessarily installing typing on recent Python versions (thanks to Louis Trezzini)
+* Fixed injecting request-scoped dependencies into teradown_request handlers (fix suggested
+  by Nick Krichevsky)
+* Added PEP 561 py.typed marker so that tools know to use type hints in the package's source
+
 Version 0.12.0
 --------------
 
