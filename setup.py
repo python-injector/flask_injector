@@ -5,7 +5,10 @@ long_description = open('README.rst').read()
 
 # very convoluted way of reading version from the module without importing it
 version = (
-    [l for l in open('flask_injector.py') if '__version__ = ' in l][0].split('=')[-1].strip().strip('\'')
+    [l for l in open('flask_injector/__init__.py') if '__version__ = ' in l][0]
+    .split('=')[-1]
+    .strip()
+    .strip('\'')
 )
 
 if __name__ == '__main__':
@@ -18,7 +21,7 @@ if __name__ == '__main__':
         author_email='alec@swapoff.org',
         description='Adds Injector, a Dependency Injection framework, support to Flask.',
         long_description=long_description,
-        py_modules=['flask_injector'],
+        packages=['flask_injector'],
         zip_safe=True,
         platforms='any',
         install_requires=['Flask', 'injector>=0.10.0', 'typing; python_version < "3.5"'],
