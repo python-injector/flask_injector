@@ -22,6 +22,7 @@ if __name__ == '__main__':
         description='Adds Injector, a Dependency Injection framework, support to Flask.',
         long_description=long_description,
         packages=['flask_injector'],
+        package_data={'flask_injector': ['py.typed']},
         zip_safe=True,
         platforms='any',
         install_requires=['Flask', 'injector>=0.10.0', 'typing; python_version < "3.5"'],
