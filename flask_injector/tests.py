@@ -2,6 +2,7 @@ import gc
 import json
 import warnings
 from functools import partial
+from typing import NewType
 
 import flask_restful
 import flask_restplus
@@ -410,3 +411,24 @@ if injector_version >= '0.12':
             eq_(response.data.decode(), 'Hello World')
         finally:
             del X
+
+
+def test_request_scope_covers_teardown_request_handlers():
+    app = Flask(__name__)
+    UserID = NewType('UserID', int)
+
+    @app.route('/')
+    def index():
+        return 'hello'
+
+    @app.teardown_request
+    def on_teardown(exc, user_id: UserID):
+        eq_(user_id, 321)
+
+    def configure(binder):
+        binder.bind(UserID, to=321, scope=request)
+
+    FlaskInjector(app=app, modules=[configure])
+    client = app.test_client()
+    response = client.get('/')
+    eq_(response.data.decode(), 'hello')
