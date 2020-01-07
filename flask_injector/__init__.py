@@ -330,7 +330,11 @@ class FlaskInjector:
             injector_not_null.get(request_scope_class).cleanup()
 
         app.before_request_funcs.setdefault(None, []).insert(0, reset_request_scope_before)
-        app.teardown_request(reset_request_scope_after)
+        # We're accessing Flask internals here as the app.teardown_request decorator appends to a list of
+        # handlers but Flask itself reverses the list when it executes them. To allow injecting request-scoped
+        # dependencies into teardown_request handlers we need to run our teardown_request handler after them.
+        # Also see https://github.com/alecthomas/flask_injector/issues/42 where it was reported.
+        app.teardown_request_funcs.setdefault(None, []).insert(0, reset_request_scope_after)
 
         self.injector = injector_not_null
         self.app = app
