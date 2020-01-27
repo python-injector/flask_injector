@@ -42,6 +42,45 @@ Flask-Injector lets you inject dependencies into:
 Flask-Injector supports defining types using function annotations (Python 3),
 see below.
 
+Documentation
+-------------
+
+As Flask-Injector uses Injector under the hood you should find the
+`Injector documentation <https://injector.readthedocs.io/en/latest/>`_,
+including the `Injector API reference <https://injector.readthedocs.io/en/latest/api.html>`_,
+helpful. The `Injector README <https://github.com/alecthomas/injector/blob/master/README.md>`_
+provides a tutorial-level introduction to using Injector.
+
+The Flask-Injector public API consists of the following:
+
+* `FlaskInjector` class with the constructor taking the following parameters:
+
+  * `app`, an instance of`flask.Flask` [mandatory] – the Flask application to be used
+  * `modules`, an iterable of
+    `Injector modules <https://injector.readthedocs.io/en/latest/api.html#injector.Binder.install>`_ [optional]
+    – the Injector modules to be used.
+  * `injector`, an instance of
+    `injector.Injector <https://injector.readthedocs.io/en/latest/api.html#injector.Injector>`_ [optional]
+    – an instance of Injector to be used if, for some reason, it's not desirable
+    for `FlaskInjector` to create a new one. You're likely to not need to use this.
+  * `request_scope_class`, an `injector.Scope <https://injector.readthedocs.io/en/latest/api.html#injector.Scope>`_
+    subclass [optional] – the scope to be used instead of `RequestScope`. You're likely to need to use this
+    except for testing.
+* `RequestScope` class – an `injector.Scope <https://injector.readthedocs.io/en/latest/api.html#injector.Scope>`_
+  subclass to be used for storing and reusing request-scoped dependencies
+* `request` object – to be used as a class decorator or in explicit
+  `bind() <https://injector.readthedocs.io/en/latest/api.html#injector.Binder.bind>`_ calls in
+  Injector modules.
+  
+Creating an instance of `FlaskInjector` performs side-effectful configuration of the Flask
+application passed to it. The following bindings are applied (if you want to modify them you
+need to do it in one of the modules passed to the `FlaskInjector` constructor):
+
+* `flask.Flask` is bound to the Flask application in the (scope: singleton)
+* `flask.Config` is bound to the configuration of the Flask application
+* `flask.Request` is bound to the current Flask request object, equivalent to the thread-local
+  `flask.request` object (scope: request)
+ 
 Example application using Flask-Injector
 ----------------------------------------
 
