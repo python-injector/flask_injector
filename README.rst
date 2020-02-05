@@ -20,7 +20,7 @@ As of version 0.12.0 it requires Injector version 0.13.2 or greater and Flask
 
 GitHub project page: https://github.com/alecthomas/flask_injector
 
-PyPI package page: https://pypi.python.org/pypi/Flask-Injector
+PyPI package page: https://pypi.org/project/Flask-Injector/
 
 Changelog: https://github.com/alecthomas/flask_injector/blob/master/CHANGELOG.rst
 
@@ -122,8 +122,8 @@ Example application using Flask-Injector
 
 
     # In the Injector world, all dependency configuration and initialization is
-    # performed in modules (http://packages.python.org/injector/#module). The
-    # same is true with Flask-Injector. You can see some examples of configuring
+    # performed in modules (https://injector.readthedocs.io/en/latest/terminology.html#module).
+    # The same is true with Flask-Injector. You can see some examples of configuring
     # Flask extensions through modules below.
 
     # Accordingly, the next step is to create modules for any objects we want made
