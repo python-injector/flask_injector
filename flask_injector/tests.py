@@ -6,6 +6,7 @@ from typing import NewType
 
 import flask_restful
 import flask_restplus
+import flask_restx
 from eventlet import greenthread
 from injector import __version__ as injector_version, CallableProvider, inject, Scope
 from flask import Blueprint, Flask
@@ -321,6 +322,30 @@ def test_flask_restplus_integration_works():
         # if we don't pass the API instance to the Resource constructor correctly. The failure is
         # triggered by the presence of the __apidoc__ attribute on the method being called,
         # hence the decorator, which assigns it.
+        @api.doc()
+        def get(self):
+            return {'int': self._int}
+
+    api.add_resource(HelloWorld, '/hello')
+
+    FlaskInjector(app=app)
+
+    client = app.test_client()
+    response = client.get('/hello')
+    data = json.loads(response.data.decode('utf-8'))
+    eq_(data, {'int': 0})
+
+
+def test_flask_restx_integration_works():
+    app = Flask(__name__)
+    api = flask_restx.Api(app)
+
+    class HelloWorld(flask_restx.Resource):
+        @inject
+        def __init__(self, *args, int: int, **kwargs):
+            self._int = int
+            super().__init__(*args, **kwargs)
+
         @api.doc()
         def get(self):
             return {'int': self._int}
