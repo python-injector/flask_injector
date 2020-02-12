@@ -1,6 +1,11 @@
 Flask-Injector Changelog
 ========================
 
+Version 0.12.2
+--------------
+
+* Added Flask-RESTX integration (#48, thanks to Michael Bukachi)
+
 Version 0.12.1
 --------------
 
