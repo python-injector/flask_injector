@@ -6,6 +6,7 @@ from typing import NewType
 
 import flask_restful
 import flask_restplus
+import flask_restx
 from eventlet import greenthread
 from injector import __version__ as injector_version, CallableProvider, inject, Scope
 from flask import Blueprint, Flask
@@ -324,6 +325,29 @@ def test_flask_restplus_integration_works():
         @api.doc()
         def get(self):
             return {'int': self._int}
+
+    api.add_resource(HelloWorld, '/hello')
+
+    FlaskInjector(app=app)
+
+    client = app.test_client()
+    response = client.get('/hello')
+    data = json.loads(response.data.decode('utf-8'))
+    eq_(data, {'int': 0})
+
+
+def test_flask_restx_integration_works():
+    class HelloWorld(flask_restx.Resource):
+        @inject
+        def __init__(self, *args, int: int, **kwargs):
+            self._int = int
+            super().__init__(*args, **kwargs)
+
+        def get(self):
+            return {'int': self._int}
+
+    app = Flask(__name__)
+    api = flask_restx.Api(app)
 
     api.add_resource(HelloWorld, '/hello')
 

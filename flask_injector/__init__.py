@@ -25,6 +25,12 @@ try:
 except ImportError:
     flask_restplus = None
 
+try:
+    import flask_restx as flask_restplus
+    from flask_restx.utils import unpack as flask_response_unpack  # noqa
+except ImportError:
+    flask_restplus = None
+
 from injector import Binder, Injector, inject
 from flask import Config, Request
 from werkzeug.local import Local, LocalManager, LocalProxy
