@@ -40,6 +40,7 @@ Flask-Injector lets you inject dependencies into:
 * Jinja environment globals (functions in `app.jinja_env.globals`)
 * Flask-RESTFul Resource constructors
 * Flask-RestPlus Resource constructors
+* Flask-RESTX Resource constructors
 
 Flask-Injector supports defining types using function annotations (Python 3),
 see below.
