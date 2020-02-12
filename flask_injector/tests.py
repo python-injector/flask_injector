@@ -337,17 +337,18 @@ def test_flask_restplus_integration_works():
 
 
 def test_flask_restx_integration_works():
+    app = Flask(__name__)
+    api = flask_restx.Api(app)
+
     class HelloWorld(flask_restx.Resource):
         @inject
         def __init__(self, *args, int: int, **kwargs):
             self._int = int
             super().__init__(*args, **kwargs)
 
+        @api.doc()
         def get(self):
             return {'int': self._int}
-
-    app = Flask(__name__)
-    api = flask_restx.Api(app)
 
     api.add_resource(HelloWorld, '/hello')
 

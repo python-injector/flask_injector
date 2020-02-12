@@ -24,12 +24,12 @@ try:
     from flask_restplus.utils import unpack as flask_response_unpack  # noqa
 except ImportError:
     flask_restplus = None
-
+#
 try:
-    import flask_restx as flask_restplus
+    import flask_restx
     from flask_restx.utils import unpack as flask_response_unpack  # noqa
 except ImportError:
-    flask_restplus = None
+    flask_restx = None
 
 from injector import Binder, Injector, inject
 from flask import Config, Request
@@ -137,6 +137,30 @@ def wrap_class_based_view(fun: Callable, injector: Injector) -> Callable:
         # that we're very likely dealing with flask_restplus we'll provide the Api
         # instance as keyword argument instead (it'll work just as well unless
         # flask_restplus changes the name of the parameter; also
+        # Injector.create_object doesn't support extra positional arguments anyway).
+        if 'api' in class_kwargs:
+            raise AssertionError('api keyword argument is reserved')
+
+        class_kwargs['api'] = flask_restful_api
+
+    if flask_restful_api and flask_restx and isinstance(flask_restful_api, flask_restx.Api):
+        # This is flask_restx' add_resource implementation:
+        #
+        #     def add_resource(self, resource, *urls, **kwargs):
+        #     (...)
+        #     args = kwargs.pop('resource_class_args', [])
+        #     if isinstance(args, tuple):
+        #         args = list(args)
+        #     args.insert(0, self)
+        #     kwargs['resource_class_args'] = args
+        #
+        #     super(Api, self).add_resource(resource, *urls, **kwargs)
+        #
+        # Correspondingly, flask_restx.Resource's constructor expects
+        # flask_restx.Api instance in its first argument; since we detected
+        # that we're very likely dealing with flask_restx we'll provide the Api
+        # instance as keyword argument instead (it'll work just as well unless
+        # flask_restx changes the name of the parameter; also
         # Injector.create_object doesn't support extra positional arguments anyway).
         if 'api' in class_kwargs:
             raise AssertionError('api keyword argument is reserved')
