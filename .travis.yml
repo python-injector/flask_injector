@@ -11,7 +11,9 @@ matrix:
   allow_failures:
     - python: "nightly"
 install:
-  - pip install coveralls flake8 nose flask flask_restful flask_restplus injector flask_sqlalchemy eventlet typing
+  # werkzeug 1.0 breaks some parts of Flask ecosystem (see https://github.com/pallets/flask/pull/3488),
+  # so let's use older versions at least for now.
+  - pip install coveralls flake8 nose flask flask_restful flask_restplus injector flask_sqlalchemy eventlet typing "werkzeug<1.0"
   # mypy can't be installed on pypy
   - if [[ "${TRAVIS_PYTHON_VERSION}" != "pypy"* ]] ; then pip install mypy typed_ast ; fi
   - if [[ "${TRAVIS_PYTHON_VERSION}" != "pypy"* && "${TRAVIS_PYTHON_VERSION}" != "3.5"* ]] ; then pip install black ; fi
