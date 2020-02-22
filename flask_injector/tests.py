@@ -463,3 +463,26 @@ def test_request_scope_covers_teardown_request_handlers():
     client = app.test_client()
     response = client.get('/')
     eq_(response.data.decode(), 'hello')
+
+
+def test_request_scope_covers_blueprint_teardown_request_handlers():
+    app = Flask(__name__)
+    UserID = NewType('UserID', int)
+    blueprint = Blueprint('blueprint', __name__)
+
+    @blueprint.route('/')
+    def index():
+        return 'hello'
+
+    @blueprint.teardown_request
+    def on_teardown(exc, user_id: UserID):
+        eq_(user_id, 321)
+
+    def configure(binder):
+        binder.bind(UserID, to=321, scope=request)
+
+    app.register_blueprint(blueprint)
+    FlaskInjector(app=app, modules=[configure])
+    client = app.test_client()
+    response = client.get('/')
+    eq_(response.data.decode(), 'hello')
