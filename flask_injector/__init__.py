@@ -336,7 +336,18 @@ class FlaskInjector:
         def reset_request_scope_before(*args: Any, **kwargs: Any) -> None:
             injector_not_null.get(request_scope_class).prepare()
 
-        def reset_request_scope_after(*args: Any, **kwargs: Any) -> None:
+        def global_reset_request_scope_after(*args: Any, **kwargs: Any) -> None:
+            blueprint = flask.request.blueprint
+            # If current blueprint has teardown_request_funcs associated with it we know there may be
+            # a some teardown request handlers we need to inject into, so we can't reset the scope just yet.
+            # We'll leave it to blueprint_reset_request_scope_after to do the job which we know will run
+            # later and we know it'll run after any teardown_request handlers we may want to inject into.
+            if blueprint is None or blueprint not in app.teardown_request_funcs:
+                injector_not_null.get(request_scope_class).cleanup()
+
+        def blueprint_reset_request_scope_after(*args: Any, **kwargs: Any) -> None:
+            # If we got here we truly know this is the last teardown handler, which means we can reset the
+            # scope unconditionally.
             injector_not_null.get(request_scope_class).cleanup()
 
         app.before_request_funcs.setdefault(None, []).insert(0, reset_request_scope_before)
@@ -344,7 +355,18 @@ class FlaskInjector:
         # handlers but Flask itself reverses the list when it executes them. To allow injecting request-scoped
         # dependencies into teardown_request handlers we need to run our teardown_request handler after them.
         # Also see https://github.com/alecthomas/flask_injector/issues/42 where it was reported.
-        app.teardown_request_funcs.setdefault(None, []).insert(0, reset_request_scope_after)
+        # Secondly, we need to handle blueprints. Flask first executes non-blueprint teardown handlers in
+        # reverse order and only then executes blueprint-associated teardown handlers in reverse order,
+        # which means we can't just set on non-blueprint teardown handler, but we need to set both.
+        # In non-blueprint teardown handler we check if a blueprint handler will run – if so, we do nothing
+        # there and leave it to the blueprint teardown handler.
+        #
+        # We need the None key to be present in the dictionary so that the dictionary iteration always yields
+        # None as well. We *always* have to set the global teardown request.
+        app.teardown_request_funcs.setdefault(None, []).insert(0, global_reset_request_scope_after)
+        for bp, functions in app.teardown_request_funcs.items():
+            if bp is not None:
+                functions.insert(0, blueprint_reset_request_scope_after)
 
         self.injector = injector_not_null
         self.app = app
