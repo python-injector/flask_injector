@@ -1,6 +1,11 @@
 Flask-Injector Changelog
 ========================
 
+Version 0.12.3
+--------------
+
+* Fixed injecting into blueprint-associated teardown_request handlers
+
 Version 0.12.2
 --------------
 

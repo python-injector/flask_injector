@@ -39,7 +39,7 @@ from injector import Module, Provider, Scope, ScopeDecorator, singleton
 
 
 __author__ = 'Alec Thomas <alec@swapoff.org>'
-__version__ = '0.12.2'
+__version__ = '0.12.3'
 __all__ = ['request', 'RequestScope', 'Config', 'Request', 'FlaskInjector']
 
 T = TypeVar('T', LocalProxy, Callable)
