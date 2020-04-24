@@ -53,6 +53,20 @@ def instance_method_wrapper(im: T) -> T:
     return wrapper  # type: ignore
 
 
+def _resolve_wraped_function(func: Callable) -> Callable:
+    """
+    Decorators that use functools wraps will not have
+    a func.__code__ object that matches what View.as_view
+    creates breaking code.
+
+    This gets the original undecorated function.
+    """
+    if hasattr(func, '__wrapped__'):
+        return _resolve_wraped_function(func.__wrapped__)
+    else:
+        return func
+
+
 def wrap_fun(fun: T, injector: Injector) -> T:
     if isinstance(fun, LocalProxy):
         return fun  # type: ignore
@@ -101,6 +115,7 @@ def wrap_class_based_view(fun: Callable, injector: Injector) -> Callable:
     cls = cast(Any, fun).view_class
     name = fun.__name__
 
+    fun = _resolve_wraped_function(fun)
     closure_contents = (c.cell_contents for c in cast(Any, fun).__closure__)
     fun_closure = dict(zip(fun.__code__.co_freevars, closure_contents))
     try:
