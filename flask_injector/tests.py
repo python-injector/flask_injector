@@ -1,7 +1,7 @@
 import gc
 import json
 import warnings
-from functools import partial
+from functools import partial, wraps
 from typing import NewType
 
 import flask_restful
@@ -272,6 +272,36 @@ def test_view_args_and_class_args_are_passed_to_class_based_views():
 
         def dispatch_request(self, dispatch_arg):
             return '%s %s' % (self.class_arg, dispatch_arg)
+
+    app = Flask(__name__)
+    app.add_url_rule('/<dispatch_arg>', view_func=MyView.as_view('view', class_arg='aaa'))
+
+    FlaskInjector(app=app)
+
+    client = app.test_client()
+    response = client.get('/bbb')
+    print(response.data)
+    eq_(response.data, b'aaa bbb')
+
+
+def test_view_decoration_works():
+
+    def decorator(view):
+        @wraps(view)
+        def wrapper(*args, **kwargs):
+            return view(*args, **kwargs)
+
+        return wrapper
+
+    class MyView(View):
+        decorators = [decorator]
+
+        def __init__(self, class_arg):
+            self.class_arg = class_arg
+
+        def dispatch_request(self, dispatch_arg):
+            return '%s %s' % (self.class_arg, dispatch_arg)
+
 
     app = Flask(__name__)
     app.add_url_rule('/<dispatch_arg>', view_func=MyView.as_view('view', class_arg='aaa'))
