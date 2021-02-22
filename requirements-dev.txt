@@ -8,6 +8,4 @@ flask_sqlalchemy
 injector
 mypy;implementation_name=="cpython"
 nose
-# werkzeug 1.0 breaks some parts of Flask ecosystem (see https://github.com/pallets/flask/pull/3488),
-# so let's use older versions at least for now.
-werkzeug<1.0
+werkzeug

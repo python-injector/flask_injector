@@ -18,6 +18,8 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         python-version: [3.6, 3.7, 3.8, pypy3]
+        # TODO: Test with 2.0.0rc1+ when Flask-SQLAlchemy works with it
+        werkzeug-version: ["<1.0.0", "~=1.0"]
     steps:
     - uses: actions/checkout@v2
     - name: Set up Python ${{ matrix.python-version }}
@@ -26,7 +28,7 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: |
-        pip install -r requirements-dev.txt
+        pip install -r requirements-dev.txt "werkzeug${{ matrix.werkzeug-version }}"
         pip install .
     - name: Run tests
       run: if which mypy; then make ci; else make test; fi
