@@ -5,7 +5,6 @@ from functools import partial
 from typing import NewType
 
 import flask_restful
-import flask_restplus
 import flask_restx
 from eventlet import greenthread
 from injector import __version__ as injector_version, CallableProvider, inject, Scope
@@ -303,35 +302,6 @@ def test_flask_restful_integration_works():
 
     client = app.test_client()
     response = client.get('/')
-    data = json.loads(response.data.decode('utf-8'))
-    eq_(data, {'int': 0})
-
-
-def test_flask_restplus_integration_works():
-    app = Flask(__name__)
-    api = flask_restplus.Api(app)
-
-    class HelloWorld(flask_restplus.Resource):
-        @inject
-        def __init__(self, *args, int: int, **kwargs):
-            self._int = int
-            super().__init__(*args, **kwargs)
-
-        # This decorator is crucial to have in this test. We need it to make sure that
-        # the test fails with "AttributeError: 'NoneType' object has no attribute '_validate'"
-        # if we don't pass the API instance to the Resource constructor correctly. The failure is
-        # triggered by the presence of the __apidoc__ attribute on the method being called,
-        # hence the decorator, which assigns it.
-        @api.doc()
-        def get(self):
-            return {'int': self._int}
-
-    api.add_resource(HelloWorld, '/hello')
-
-    FlaskInjector(app=app)
-
-    client = app.test_client()
-    response = client.get('/hello')
     data = json.loads(response.data.decode('utf-8'))
     eq_(data, {'int': 0})
 

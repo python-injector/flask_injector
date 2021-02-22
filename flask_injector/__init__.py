@@ -20,12 +20,6 @@ try:
 except ImportError:
     FlaskRestfulApi = None
 try:
-    import flask_restplus
-    from flask_restplus.utils import unpack as flask_response_unpack  # noqa
-except ImportError:
-    flask_restplus = None
-#
-try:
     import flask_restx
     from flask_restx.utils import unpack as flask_response_unpack  # noqa
 except ImportError:
@@ -119,12 +113,9 @@ def wrap_class_based_view(fun: Callable, injector: Injector) -> Callable:
         class_args = fun_closure.get('class_args')
         assert not class_args, 'Class args are not supported, use kwargs instead'
 
-    if (
-        flask_restful_api
-        and (flask_restplus and isinstance(flask_restful_api, flask_restplus.Api))
-        or (flask_restx and isinstance(flask_restful_api, flask_restx.Api))
-    ):
-        # This is flask_restplus' add_resource implementation:
+    if flask_restful_api and flask_restx and isinstance(flask_restful_api, flask_restx.Api):
+        # This is flask_restplus' (before it forked into flask_restx) add_resource
+        # implementation:
         #
         #     def add_resource(self, resource, *urls, **kwargs):
         #     (...)
@@ -136,11 +127,11 @@ def wrap_class_based_view(fun: Callable, injector: Injector) -> Callable:
         #
         #     super(Api, self).add_resource(resource, *urls, **kwargs)
         #
-        # Correspondingly, flask_restplus.Resource's constructor expects
-        # flask_restplus.Api instance in its first argument; since we detected
-        # that we're very likely dealing with flask_restplus we'll provide the Api
+        # Correspondingly, flask_restx.Resource's constructor expects
+        # flask_restx.Api instance in its first argument; since we detected
+        # that we're very likely dealing with flask_restx we'll provide the Api
         # instance as keyword argument instead (it'll work just as well unless
-        # flask_restplus changes the name of the parameter; also
+        # flask_restx changes the name of the parameter; also
         # Injector.create_object doesn't support extra positional arguments anyway).
         if 'api' in class_kwargs:
             raise AssertionError('api keyword argument is reserved')

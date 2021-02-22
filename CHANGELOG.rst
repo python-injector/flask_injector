@@ -7,6 +7,7 @@ Version 0.13.0 (not released yet)
 Backwards incompatible:
 
 * Dropped Python 3.5 support
+* Dropped flask_restplus support (the library hasn't been usable with Werkzeug 1.0+)
 
 Version 0.12.3
 --------------
