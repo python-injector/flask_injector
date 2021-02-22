@@ -1,6 +1,13 @@
 Flask-Injector Changelog
 ========================
 
+Version 0.13.0 (not released yet)
+---------------------------------
+
+Backwards incompatible:
+
+* Dropped Python 3.5 support
+
 Version 0.12.3
 --------------
 
