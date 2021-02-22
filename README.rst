@@ -1,12 +1,11 @@
 Flask-Injector
 ==============
 
-.. image:: https://secure.travis-ci.org/alecthomas/flask_injector.png?branch=master
-   :alt: Build status
-   :target: https://travis-ci.org/alecthomas/flask_injector
-.. image:: https://coveralls.io/repos/github/alecthomas/flask_injector/badge.svg?branch=master
-   :alt: Coverage status
-   :target: https://coveralls.io/github/alecthomas/flask_injector?branch=master
+.. image:: https://codecov.io/gh/alecthomas/flask_injector/branch/master/graph/badge.svg
+   :target: https://codecov.io/gh/alecthomas/flask_injector
+
+.. image:: https://github.com/alecthomas/flask_injector/workflows/CI/badge.svg
+   :target: https://github.com/alecthomas/flask_injector?query=workflow%3ACI+branch%3Amaster
 
 
 Adds `Injector <https://github.com/alecthomas/injector>`_ support to Flask,
