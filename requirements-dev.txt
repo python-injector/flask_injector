@@ -3,7 +3,8 @@ eventlet
 flake8
 flask
 flask_restful
-flask_restx
+# Installed from the master branch until they release a post-0.4.0 version that supports Flask/Werkzeug 2 correctly
+git+https://github.com/python-restx/flask-restx.git@596e97d5ceae759dbf0b90ec911aeee019227446
 injector
 mypy;implementation_name=="cpython"
 nose
