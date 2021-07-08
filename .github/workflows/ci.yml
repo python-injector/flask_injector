@@ -7,6 +7,7 @@ on:
       - try
       - try-perf
       - master
+      - dev
   pull_request:
     branches:
       - "**"
