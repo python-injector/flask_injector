@@ -18,7 +18,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         python-version: [3.6, 3.7, 3.8, pypy3]
-        # TODO: Test with 2.0.0rc1+ when Flask-SQLAlchemy works with it
+        # TODO: Test with 2.0.0rc1+
         werkzeug-version: ["<1.0.0", "~=1.0"]
     steps:
     - uses: actions/checkout@v2

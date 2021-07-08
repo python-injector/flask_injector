@@ -7,7 +7,6 @@ ci: test lint
 test:
 	nosetests -v $(SOURCES) \
 		--with-coverage --cover-package=flask_injector --cover-html --cover-branches --cover-xml
-	PYTHONPATH=.:$(PYTHONPATH) python example.py
 
 .PHONY: lint
 lint: flake8 mypy black-check

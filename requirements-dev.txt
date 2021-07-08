@@ -4,7 +4,6 @@ flake8
 flask
 flask_restful
 flask_restx
-flask_sqlalchemy
 injector
 mypy;implementation_name=="cpython"
 nose
