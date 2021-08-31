@@ -1,8 +1,10 @@
 Flask-Injector Changelog
 ========================
 
-Version 0.13.0 (not released yet)
----------------------------------
+Version 0.13.0
+--------------
+
+* Improved Werkzeug/Flask 2.0 compatibility (fixed the "RuntimeError: Working outside of request context" error)
 
 Backwards incompatible:
 
