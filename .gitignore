@@ -5,3 +5,5 @@ build/
 .mypy_cache/
 cover/
 coverage.xml
+.coverage
+ve*/
