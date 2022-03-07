@@ -1,4 +1,5 @@
 black;implementation_name=="cpython"
+coverage
 eventlet
 flake8
 flask
@@ -7,5 +8,5 @@ flask_restx
 flask_sqlalchemy
 injector
 mypy;implementation_name=="cpython"
-nose
+pytest
 werkzeug
