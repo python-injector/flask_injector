@@ -1,5 +1,4 @@
 black;implementation_name=="cpython"
-coverage
 eventlet
 flake8
 flask

@@ -4,6 +4,4 @@ build/
 *.egg-info/
 .mypy_cache/
 cover/
-.coverage
 coverage.xml
-ve*/

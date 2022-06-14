@@ -5,7 +5,7 @@ ci: test lint
 
 .PHONY: test
 test:
-	coverage run --source=$(SOURCES) -m pytest -v $(SOURCES)/tests.py && coverage report -m
+	coverage run --source=$(SOURCES) -m pytest -v flask_injector/tests.py && coverage report -m
 	PYTHONPATH=.:$(PYTHONPATH) python example.py
 
 .PHONY: lint
