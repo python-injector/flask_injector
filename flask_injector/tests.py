@@ -11,7 +11,6 @@ from injector import __version__ as injector_version, CallableProvider, inject, 
 from flask import Blueprint, Flask
 from flask.templating import render_template_string
 from flask.views import View
-from nose.tools import eq_
 
 from flask_injector import request, FlaskInjector
 
@@ -47,29 +46,29 @@ def test_injections():
     @app.before_request
     def br(c: list):
         inc()
-        eq_(c, l)
+        assert c == l
 
     @app.before_first_request
     def bfr(c: list):
         inc()
-        eq_(c, l)
+        assert c == l
 
     @app.after_request
     def ar(response_class, c: list):
         inc()
-        eq_(c, l)
+        assert c == l
         return response_class
 
     @app.context_processor
     def cp(c: list):
         inc()
-        eq_(c, l)
+        assert c == l
         return {}
 
     @app.teardown_request
     def tr(sender, exc=None, c: list = None):
         inc()
-        eq_(c, l)
+        assert c == l
 
     app.add_url_rule('/view2', view_func=View2.as_view('view2'))
 
@@ -77,13 +76,13 @@ def test_injections():
 
     with app.test_client() as c:
         response = c.get('/view1')
-        eq_(response.get_data(as_text=True), "something")
+        assert response.get_data(as_text=True) == "something"
 
     with app.test_client() as c:
         response = c.get('/view2')
-        eq_(response.get_data(as_text=True), '%s' % (l,))
+        assert response.get_data(as_text=True) == '%s' % (l,)
 
-    eq_(counter[0], 11)
+    assert counter[0] == 11
 
 
 def test_resets():
@@ -107,12 +106,12 @@ def test_resets():
 
     FlaskInjector(app, request_scope_class=OurScope)
 
-    eq_(counter[0], 0)
+    assert counter[0] == 0
 
     with app.test_client() as c:
         c.get('/')
 
-    eq_(counter[0], 1)
+    assert counter[0] == 1
 
 
 def test_memory_leak():
@@ -163,7 +162,7 @@ def test_memory_leak():
     gc.collect()
     greenthread_count = len([obj for obj in gc.get_objects() if type(obj) is greenthread.GreenThread])
 
-    eq_(greenthread_count, 0)
+    assert greenthread_count == 0
 
 
 def test_doesnt_raise_deprecation_warning():
@@ -185,7 +184,7 @@ def test_doesnt_raise_deprecation_warning():
         warnings.simplefilter("always")
         with app.test_client() as c:
             c.get('/')
-        eq_(len(w), 0, map(str, w))
+        assert len(w) == 0, map(str, w)
 
 
 def test_jinja_env_globals_support_injection():
@@ -206,7 +205,7 @@ def test_jinja_env_globals_support_injection():
     FlaskInjector(app=app, modules=[configure])
 
     with app.test_client() as c:
-        eq_(c.get('/').get_data(as_text=True), 'xyz')
+        assert c.get('/').get_data(as_text=True) == 'xyz'
 
 
 def test_error_handlers_support_injection():
@@ -234,10 +233,10 @@ def test_error_handlers_support_injection():
 
     with app.test_client() as c:
         response = c.get('/this-page-does-not-exist')
-        eq_((response.status_code, response.get_data(as_text=True)), (404, 'injected content'))
+        assert (response.status_code, response.get_data(as_text=True)) == (404, 'injected content')
 
         response = c.get('/custom-exception')
-        eq_((response.status_code, response.get_data(as_text=True)), (500, 'injected content'))
+        assert (response.status_code, response.get_data(as_text=True)) == (500, 'injected content')
 
 
 def test_view_functions_arent_modified_globally():
@@ -280,7 +279,7 @@ def test_view_args_and_class_args_are_passed_to_class_based_views():
     client = app.test_client()
     response = client.get('/bbb')
     print(response.data)
-    eq_(response.data, b'aaa bbb')
+    assert response.data == b'aaa bbb'
 
 
 def test_flask_restful_integration_works():
@@ -303,7 +302,7 @@ def test_flask_restful_integration_works():
     client = app.test_client()
     response = client.get('/')
     data = json.loads(response.data.decode('utf-8'))
-    eq_(data, {'int': 0})
+    assert data == {'int': 0}
 
 
 def test_flask_restx_integration_works():
@@ -327,7 +326,7 @@ def test_flask_restx_integration_works():
     client = app.test_client()
     response = client.get('/hello')
     data = json.loads(response.data.decode('utf-8'))
-    eq_(data, {'int': 0})
+    assert data == {'int': 0}
 
 
 def test_request_scope_not_started_before_any_request_made_regression():
@@ -344,7 +343,7 @@ def test_request_scope_not_started_before_any_request_made_regression():
 
     app = Flask(__name__)
     flask_injector = FlaskInjector(app=app, modules=[configure])
-    eq_(flask_injector.injector.get(str), 'this is string')
+    assert flask_injector.injector.get(str) == 'this is string'
 
 
 def test_noninstrospectable_hooks_dont_crash_everything():
@@ -380,10 +379,10 @@ def test_instance_methods():
 
     client = app.test_client()
     response = client.get('/from_injected_service')
-    eq_(response.data.decode('utf-8'), "test message 1")
+    assert response.data.decode('utf-8') == "test message 1"
 
     response = client.get('/static_value')
-    eq_(response.data.decode('utf-8'), "test message 2")
+    assert response.data.decode('utf-8') == "test message 2"
 
 
 if injector_version >= '0.12':
@@ -409,7 +408,7 @@ if injector_version >= '0.12':
         try:
             client = app.test_client()
             response = client.get('/')
-            eq_(response.data.decode(), 'Hello World')
+            assert response.data.decode() == 'Hello World'
         finally:
             del X
 
@@ -424,7 +423,7 @@ def test_request_scope_covers_teardown_request_handlers():
 
     @app.teardown_request
     def on_teardown(exc, user_id: UserID):
-        eq_(user_id, 321)
+        assert user_id == 321
 
     def configure(binder):
         binder.bind(UserID, to=321, scope=request)
@@ -432,7 +431,7 @@ def test_request_scope_covers_teardown_request_handlers():
     FlaskInjector(app=app, modules=[configure])
     client = app.test_client()
     response = client.get('/')
-    eq_(response.data.decode(), 'hello')
+    assert response.data.decode() == 'hello'
 
 
 def test_request_scope_covers_blueprint_teardown_request_handlers():
@@ -446,7 +445,7 @@ def test_request_scope_covers_blueprint_teardown_request_handlers():
 
     @blueprint.teardown_request
     def on_teardown(exc, user_id: UserID):
-        eq_(user_id, 321)
+        assert user_id == 321
 
     def configure(binder):
         binder.bind(UserID, to=321, scope=request)
@@ -455,4 +454,4 @@ def test_request_scope_covers_blueprint_teardown_request_handlers():
     FlaskInjector(app=app, modules=[configure])
     client = app.test_client()
     response = client.get('/')
-    eq_(response.data.decode(), 'hello')
+    assert response.data.decode() == 'hello'

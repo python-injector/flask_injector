@@ -8,5 +8,5 @@ flask_restx
 flask_sqlalchemy
 injector
 mypy;implementation_name=="cpython"
-nose
+pytest
 werkzeug

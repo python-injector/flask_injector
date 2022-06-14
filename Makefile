@@ -5,8 +5,7 @@ ci: test lint
 
 .PHONY: test
 test:
-	nosetests -v $(SOURCES) \
-		--with-coverage --cover-package=flask_injector --cover-html --cover-branches --cover-xml
+	coverage run --source=$(SOURCES) -m pytest -v flask_injector/tests.py && coverage report -m
 	PYTHONPATH=.:$(PYTHONPATH) python example.py
 
 .PHONY: lint
