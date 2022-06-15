@@ -59,24 +59,26 @@ def wrap_fun(fun: T, injector: Injector) -> T:
     if hasattr(fun, '__bindings__'):
         return wrap_function(fun, injector)
 
+    if hasattr(fun, 'view_class'):
+        return wrap_class_based_view(fun, injector)
+
     if hasattr(fun, '__call__') and not isinstance(fun, type):
         try:
             type_hints = get_type_hints(fun)
-        except (AttributeError, TypeError, NameError):
+        except (AttributeError, TypeError):
             # Some callables aren't introspectable with get_type_hints,
             # let's assume they don't have anything to inject. The exception
             # types handled here are what I encountered so far.
             # It used to be AttributeError, then https://github.com/python/typing/pull/314
             # changed it to TypeError.
             wrap_it = False
+        except NameError:
+            wrap_it = True
         else:
             type_hints.pop('return', None)
             wrap_it = type_hints != {}
         if wrap_it:
             return wrap_fun(inject(fun), injector)
-
-    if hasattr(fun, 'view_class'):
-        return wrap_class_based_view(fun, injector)
 
     return fun
 
