@@ -16,8 +16,8 @@ can `find Injector on PyPI <https://pypi.org/project/injector/>`_ and `Injector
 documentation on Read the Docs <https://injector.readthedocs.io/en/latest/>`_.
 
 `Flask-Injector` is compatible with CPython 3.7+.
-As of version post-0.13.0 it requires Injector version 0.20.0 or greater and Flask
-2.1.2 or greater.
+As of version 0.15.0 it requires Injector version 0.20.0 or greater and Flask
+2.2.0 or greater.
 
 GitHub project page: https://github.com/alecthomas/flask_injector
 
