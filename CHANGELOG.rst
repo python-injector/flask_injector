@@ -1,6 +1,18 @@
 Flask-Injector Changelog
 ========================
 
+Version 0.14.0
+--------------
+
+* Infrastructure contributions thanks to ZHANG Cheng
+* Fixed all known Flask/Werkzeug compatibility issues
+
+Backwards incompatible:
+
+* Dropped Python 3.6 support
+* Flask >= 2.1.2 is now required
+* Injector >= 0.20.0 is now required
+
 Version 0.13.0
 --------------
 
