@@ -317,8 +317,6 @@ class FlaskInjector:
         ):
             process_dict(container, injector)
 
-        process_list(app.before_first_request_funcs, injector)
-
         # This is to make sure that mypy sees a non-nullable variable
         # in the closures below, otherwise it'd complain that injector
         # union may not have get attribute

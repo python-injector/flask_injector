@@ -48,11 +48,6 @@ def test_injections():
         inc()
         assert c == l
 
-    @app.before_first_request
-    def bfr(c: list):
-        inc()
-        assert c == l
-
     @app.after_request
     def ar(response_class, c: list):
         inc()
@@ -81,7 +76,7 @@ def test_injections():
     response = client.get('/view2')
     assert response.get_data(as_text=True) == '%s' % (l,)
 
-    assert counter[0] == 11
+    assert counter[0] == 10
 
 
 def test_resets():
