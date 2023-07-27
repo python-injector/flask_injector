@@ -99,7 +99,12 @@ def main():
     app.config.update(DB_CONNECTION_STRING=':memory:', SQLALCHEMY_DATABASE_URI='sqlite://')
     app.debug = True
 
-    injector = Injector([AppModule(app)])
+    # An explicit context because AppModule calls some flask-sqlalchemy's code that needs
+    # a context.
+    #
+    # https://github.com/pallets-eco/flask-sqlalchemy/issues/1129#issuecomment-1283219340
+    with app.app_context():
+        injector = Injector([AppModule(app)])
     configure_views(app=app)
 
     FlaskInjector(app=app, injector=injector)
