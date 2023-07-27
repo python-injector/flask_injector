@@ -74,13 +74,12 @@ def test_injections():
 
     FlaskInjector(app=app, modules=[conf])
 
-    with app.test_client() as c:
-        response = c.get('/view1')
-        assert response.get_data(as_text=True) == "something"
+    client = app.test_client()
+    response = client.get('/view1')
+    assert response.get_data(as_text=True) == "something"
 
-    with app.test_client() as c:
-        response = c.get('/view2')
-        assert response.get_data(as_text=True) == '%s' % (l,)
+    response = client.get('/view2')
+    assert response.get_data(as_text=True) == '%s' % (l,)
 
     assert counter[0] == 11
 
@@ -108,8 +107,8 @@ def test_resets():
 
     assert counter[0] == 0
 
-    with app.test_client() as c:
-        c.get('/')
+    client = app.test_client()
+    client.get('/')
 
     assert counter[0] == 1
 
