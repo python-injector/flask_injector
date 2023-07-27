@@ -1,6 +1,15 @@
 Flask-Injector Changelog
 ========================
 
+Version 0.15.0
+--------------
+
+* Fixed Flask 2.2.0+ compatibility, thanks to Valentin Baert
+
+Backwards incompatible:
+
+* Dropped support for Flask older than 2.2.0
+
 Version 0.14.0
 --------------
 
