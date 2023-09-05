@@ -23,6 +23,8 @@ GitHub project page: https://github.com/alecthomas/flask_injector
 
 PyPI package page: https://pypi.org/project/Flask-Injector/
 
+Conda package page: https://anaconda.org/conda-forge/flask-injector
+
 Changelog: https://github.com/alecthomas/flask_injector/blob/master/CHANGELOG.rst
 
 Features
